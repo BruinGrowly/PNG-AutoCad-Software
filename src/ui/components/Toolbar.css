@@ -1,0 +1,70 @@
+/**
+ * Toolbar Component Styles
+ */
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  width: var(--toolbar-width);
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+}
+
+.toolbar-section {
+  padding: 8px;
+}
+
+.toolbar-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.toolbar-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolbar-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbar-button:hover {
+  background: var(--bg-color);
+}
+
+.toolbar-button.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.toolbar-button-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.toolbar-button-label {
+  font-size: 9px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.toolbar-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+}
