@@ -55,8 +55,8 @@ Access the web application at your organization's deployment URL, or run locally
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/png-civil-cad.git
-cd png-civil-cad
+git clone https://github.com/BruinGrowly/PNG-AutoCad-Software.git
+cd PNG-AutoCad-Software
 
 # Install dependencies
 npm install
