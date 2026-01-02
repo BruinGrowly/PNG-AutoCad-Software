@@ -1,0 +1,149 @@
+/**
+ * Menu Bar Styles
+ */
+
+.menu-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--menubar-height);
+  padding: 0 12px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.logo-icon {
+  font-size: 18px;
+}
+
+.logo-text {
+  font-size: 14px;
+}
+
+.menu-items {
+  display: flex;
+  gap: 4px;
+}
+
+.menu-item {
+  position: relative;
+}
+
+.menu-button {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.menu-button:hover,
+.menu-button.active {
+  background: var(--bg-color);
+}
+
+.menu-button.png-menu {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.menu-dropdown button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.menu-dropdown button:hover:not(:disabled) {
+  background: var(--bg-color);
+}
+
+.menu-dropdown button:disabled {
+  color: var(--text-muted);
+}
+
+.menu-dropdown .shortcut {
+  margin-left: 24px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.offline-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.project-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.project-info .project-name {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.project-info .project-location {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}

@@ -1,0 +1,125 @@
+/**
+ * Layer Panel Styles
+ */
+
+.layer-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-width);
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+.layer-panel .panel-header {
+  padding: 8px 12px;
+}
+
+.add-layer-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.add-layer-form {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.add-layer-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-layer-form button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.layer-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.layer-item:hover {
+  background: var(--bg-color);
+}
+
+.layer-item.active {
+  background: rgba(37, 99, 235, 0.1);
+  border-left: 3px solid var(--primary-color);
+}
+
+.layer-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.visibility-btn,
+.lock-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  opacity: 0.6;
+}
+
+.visibility-btn:hover,
+.lock-btn:hover {
+  opacity: 1;
+}
+
+.visibility-btn.hidden {
+  opacity: 0.3;
+}
+
+.lock-btn.locked {
+  color: var(--danger-color);
+}
+
+.layer-color {
+  flex-shrink: 0;
+}
+
+.layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.delete-layer-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0;
+}
+
+.layer-item:hover .delete-layer-btn {
+  opacity: 1;
+}
+
+.delete-layer-btn:hover {
+  color: var(--danger-color);
+}

@@ -1,0 +1,100 @@
+/**
+ * Properties Panel Styles
+ */
+
+.properties-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.properties-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.entity-type {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--bg-color);
+  border-radius: var(--radius-sm);
+  text-transform: capitalize;
+}
+
+.properties-panel .panel-content.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+}
+
+.properties-panel .hint {
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.multi-select-info {
+  margin-top: 12px;
+}
+
+.type-count {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.property-section {
+  margin-bottom: 16px;
+}
+
+.property-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.property-row label {
+  flex: 0 0 80px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.property-row input,
+.property-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.property-row.readonly {
+  color: var(--text-muted);
+}
+
+.property-row.readonly span {
+  flex: 1;
+  font-size: 12px;
+}
+
+.property-value.readonly {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: monospace;
+}

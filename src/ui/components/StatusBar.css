@@ -1,0 +1,79 @@
+/**
+ * Status Bar Styles
+ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--statusbar-height);
+  padding: 0 12px;
+  background: var(--panel-bg);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-name {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.tool-hint {
+  color: var(--text-muted);
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+}
+
+.selection-count {
+  color: var(--primary-color);
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.zoom-level {
+  font-weight: 500;
+  min-width: 40px;
+  text-align: right;
+}
+
+.snap-status {
+  display: flex;
+  gap: 4px;
+}
+
+.snap-status span {
+  padding: 2px 6px;
+  background: var(--bg-color);
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.offline-status {
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.project-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
