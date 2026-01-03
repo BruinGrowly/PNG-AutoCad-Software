@@ -4,39 +4,23 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import type { Project, PNGProvince, PNGTerrainType } from '../../core/types';
 import {
   generateClimateReport,
   generateSeismicReport,
   generateFloodReport,
   searchMaterials,
-  getMaterialsByCategory,
   ALL_MATERIALS,
-  type ClimateReport,
-  type SeismicReport,
-  type FloodReport,
-  type Material,
-  type SoilClass,
-  type ImportanceCategory,
-  type StructuralSystem,
-} from '../../png';
+} from '../../png/index.js';
 import './PNGAnalysisPanel.css';
 
-interface PNGAnalysisPanelProps {
-  project: Project;
-  onClose: () => void;
-}
-
-type AnalysisTab = 'climate' | 'seismic' | 'flood' | 'materials' | 'structural';
-
-export function PNGAnalysisPanel({ project, onClose }: PNGAnalysisPanelProps) {
-  const [activeTab, setActiveTab] = useState<AnalysisTab>('climate');
+export function PNGAnalysisPanel({ project, onClose }) {
+  const [activeTab, setActiveTab] = useState('climate');
   const [materialSearch, setMaterialSearch] = useState('');
 
   // Analysis inputs
-  const [soilClass, setSoilClass] = useState<SoilClass>('D');
-  const [importance, setImportance] = useState<ImportanceCategory>(2);
-  const [structuralSystem, setStructuralSystem] = useState<StructuralSystem>('timber-frame');
+  const [soilClass, setSoilClass] = useState('D');
+  const [importance, setImportance] = useState(2);
+  const [structuralSystem, setStructuralSystem] = useState('timber-frame');
   const [buildingHeight, setBuildingHeight] = useState(6);
   const [buildingWeight, setBuildingWeight] = useState(500);
   const [numberOfStoreys, setNumberOfStoreys] = useState(2);
@@ -48,7 +32,7 @@ export function PNGAnalysisPanel({ project, onClose }: PNGAnalysisPanelProps) {
 
   // Generate reports
   const climateReport = useMemo(
-    () => generateClimateReport(province, terrainType, buildingType as any),
+    () => generateClimateReport(province, terrainType, buildingType),
     [province, terrainType, buildingType]
   );
 
@@ -73,7 +57,7 @@ export function PNGAnalysisPanel({ project, onClose }: PNGAnalysisPanelProps) {
         terrainType,
         distanceFromWater,
         project.location.coordinates?.elevation || 10,
-        buildingType as any,
+        buildingType,
         terrainType === 'coastal-lowland' || terrainType === 'island-atoll'
       ),
     [province, terrainType, distanceFromWater, project.location.coordinates?.elevation, buildingType]
@@ -173,7 +157,7 @@ export function PNGAnalysisPanel({ project, onClose }: PNGAnalysisPanelProps) {
 }
 
 // Climate Tab Component
-function ClimateTab({ report }: { report: ClimateReport }) {
+function ClimateTab({ report }) {
   return (
     <div className="tab-content">
       <div className="info-section">
@@ -264,20 +248,6 @@ function SeismicTab({
   setBuildingWeight,
   numberOfStoreys,
   setNumberOfStoreys,
-}: {
-  report: SeismicReport;
-  soilClass: SoilClass;
-  setSoilClass: (s: SoilClass) => void;
-  importance: ImportanceCategory;
-  setImportance: (i: ImportanceCategory) => void;
-  structuralSystem: StructuralSystem;
-  setStructuralSystem: (s: StructuralSystem) => void;
-  buildingHeight: number;
-  setBuildingHeight: (h: number) => void;
-  buildingWeight: number;
-  setBuildingWeight: (w: number) => void;
-  numberOfStoreys: number;
-  setNumberOfStoreys: (n: number) => void;
 }) {
   return (
     <div className="tab-content">
@@ -295,7 +265,7 @@ function SeismicTab({
         <div className="input-grid">
           <div className="input-group">
             <label>Soil Class</label>
-            <select value={soilClass} onChange={(e) => setSoilClass(e.target.value as SoilClass)}>
+            <select value={soilClass} onChange={(e) => setSoilClass(e.target.value)}>
               <option value="A">A - Strong rock</option>
               <option value="B">B - Rock</option>
               <option value="C">C - Shallow soil</option>
@@ -308,7 +278,7 @@ function SeismicTab({
             <label>Importance Category</label>
             <select
               value={importance}
-              onChange={(e) => setImportance(Number(e.target.value) as ImportanceCategory)}
+              onChange={(e) => setImportance(Number(e.target.value))}
             >
               <option value={1}>1 - Minor structures</option>
               <option value={2}>2 - Normal structures</option>
@@ -321,7 +291,7 @@ function SeismicTab({
             <label>Structural System</label>
             <select
               value={structuralSystem}
-              onChange={(e) => setStructuralSystem(e.target.value as StructuralSystem)}
+              onChange={(e) => setStructuralSystem(e.target.value)}
             >
               <option value="timber-frame">Timber frame</option>
               <option value="light-steel-frame">Light steel frame</option>
@@ -424,10 +394,6 @@ function FloodTab({
   report,
   distanceFromWater,
   setDistanceFromWater,
-}: {
-  report: FloodReport;
-  distanceFromWater: number;
-  setDistanceFromWater: (d: number) => void;
 }) {
   return (
     <div className="tab-content">
@@ -533,13 +499,8 @@ function MaterialsTab({
   searchQuery,
   onSearchChange,
   province,
-}: {
-  materials: Material[];
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  province: PNGProvince;
 }) {
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   return (
     <div className="tab-content materials-tab">
@@ -624,13 +585,7 @@ function MaterialsTab({
 }
 
 // Structural Tab Component
-function StructuralTab({
-  report,
-  climateReport,
-}: {
-  report: SeismicReport;
-  climateReport: ClimateReport;
-}) {
+function StructuralTab({ report, climateReport }) {
   return (
     <div className="tab-content">
       <div className="info-section">

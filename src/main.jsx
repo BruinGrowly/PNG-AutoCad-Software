@@ -4,10 +4,10 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { App } from './ui/App';
+import { App } from './ui/App.jsx';
 import './ui/styles/App.css';
 
-// Register service worker for offline support
+// Register service worker for offline support (optional)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((error) => {
@@ -16,7 +16,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

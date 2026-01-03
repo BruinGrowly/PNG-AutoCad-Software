@@ -1,74 +1,161 @@
 # PNG Civil Engineering CAD Software
 
-A specialized Computer-Aided Design (CAD) software for Civil Engineering projects in Papua New Guinea, designed to address the unique challenges of the PNG environment.
+A browser-based Computer-Aided Design (CAD) software for Civil Engineering projects in Papua New Guinea. **Runs entirely in the browser - no installation required.**
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+Then open `http://localhost:3000` in any modern browser.
 
 ## Key Features
+
+### Browser-Based - Works Anywhere
+- **No installation required** - runs in Chrome, Firefox, Safari, Edge
+- **Works offline** - save projects locally in browser storage
+- **Cross-platform** - Windows, Mac, Linux, tablets
+- **Pure JavaScript** - no TypeScript compilation needed
 
 ### PNG-Specific Design Considerations
 - **Climate Analysis**: Built-in tools for tropical climate design (high rainfall, humidity, cyclone zones)
 - **Seismic Design**: Earthquake-resistant structural calculations (PNG is in the Pacific Ring of Fire)
 - **Flood Analysis**: Terrain and drainage analysis for flood-prone areas
-- **Material Database**: Local PNG materials with properties (timber species, coral aggregate, imported materials)
+- **Material Database**: Local PNG materials with properties (Kwila, Taun, bamboo, coral aggregate)
 - **Terrain Modeling**: Support for PNG's diverse geography (highlands, coastal, riverine, island)
 
 ### Core CAD Functionality
-- 2D drafting and design tools
+- 2D drafting and design tools (line, polyline, circle, rectangle, arc)
 - Layer management system
 - Measurement and annotation tools
-- DXF/DWG file import/export
 - Grid and snap functionality
-- Multiple viewport support
+- Undo/redo support
+- Project save/load with browser storage
 
 ### Structural Engineering Tools
 - Load calculations with PNG Building Board standards
 - Foundation design for various soil conditions
-- Drainage and stormwater design
-- Road and bridge design templates
-- Water supply and sanitation layouts
+- Seismic base shear calculations
+- Lateral force distribution analysis
+- Reference to AS/NZS and PNG standards
 
-### Offline-First Architecture
-- Full functionality without internet connection
-- Local project storage with cloud sync when available
-- Offline material and standards databases
+## Using the Analysis Modules Directly
 
-## Platforms
+You can use the PNG analysis modules directly in any JavaScript environment:
 
-- **Windows Desktop**: Native application with full feature set
-- **Web Interface**: Browser-based access with offline PWA support
+```javascript
+import { generateClimateReport } from './src/png/climate.js';
+import { generateSeismicReport } from './src/png/seismic.js';
+import { generateFloodReport } from './src/png/flood.js';
+import { getMaterialById, searchMaterials } from './src/png/materials.js';
 
-## Installation
+// Get climate analysis for a location
+const climate = generateClimateReport('Madang', 'coastal-lowland', 'residential');
+console.log(climate.recommendations);
 
-### Windows Desktop
-```bash
-# Download the installer from releases
-# Run PNG-CAD-Setup.exe
-```
+// Calculate seismic design requirements
+const seismic = generateSeismicReport({
+  province: 'East New Britain',
+  soilClass: 'C',
+  importanceCategory: 3,
+  structuralSystem: 'concrete-frame',
+  buildingHeight: 12,
+  buildingWeight: 2000,
+  numberOfStoreys: 4,
+});
+console.log(`Base Shear: ${seismic.designResults.designBaseShear} kN`);
 
-### Web Interface
-```bash
-npm install
-npm run build
-npm start
+// Get flood assessment
+const flood = generateFloodReport(
+  'Gulf',
+  'riverine-floodplain',
+  50, // distance from water in meters
+  10, // elevation
+  'residential',
+  false // not coastal
+);
+console.log(`Minimum floor height: ${flood.designRequirements.minimumFloorHeight}m`);
+
+// Search materials database
+const timbers = searchMaterials('termite resistant');
+console.log(timbers.map(m => m.name));
 ```
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── core/           # Core CAD engine
-│   ├── png/            # PNG-specific modules
-│   ├── structural/     # Structural analysis
-│   ├── ui/             # User interface components
-│   ├── desktop/        # Windows desktop app (Electron)
-│   └── web/            # Web interface (React)
-├── data/
-│   ├── materials/      # Material databases
-│   ├── standards/      # Building standards
-│   ├── templates/      # Project templates
-│   └── climate/        # Climate zone data
-└── docs/               # Documentation
+│   ├── core/           # Core CAD engine (JavaScript)
+│   │   ├── engine.js   # Project, layer, entity management
+│   │   ├── geometry.js # Geometric calculations
+│   │   └── types.js    # Type definitions and constants
+│   ├── png/            # PNG-specific analysis modules
+│   │   ├── climate.js  # Climate zone analysis
+│   │   ├── seismic.js  # Seismic design calculations
+│   │   ├── flood.js    # Flood risk assessment
+│   │   ├── materials.js# PNG materials database
+│   │   └── structural.js# Structural calculations
+│   ├── ui/             # React UI components
+│   │   ├── App.jsx     # Main application
+│   │   ├── components/ # UI components
+│   │   ├── hooks/      # React hooks
+│   │   └── store/      # State management (Zustand)
+│   ├── index.js        # Main module exports
+│   └── main.jsx        # Application entry point
+├── tests/              # Test suites
+├── index.html          # HTML entry point
+├── vite.config.js      # Vite configuration
+└── package.json        # Dependencies
 ```
+
+## PNG Provinces Supported
+
+All 22 PNG provinces with specific climate, seismic, and flood data:
+- Central, East New Britain, East Sepik, Eastern Highlands
+- Enga, Gulf, Hela, Jiwaka, Madang, Manus
+- Milne Bay, Morobe, National Capital District, New Ireland
+- Oro, Sandaun, Simbu, Southern Highlands
+- West New Britain, Western, Western Highlands
+- Autonomous Region of Bougainville
+
+## Seismic Zones
+
+| Zone | Hazard Factor | Provinces |
+|------|--------------|-----------|
+| Zone 1 | 0.1 | Western |
+| Zone 2 | 0.25 | Highland provinces |
+| Zone 3 | 0.35 | Southern coastal |
+| Zone 4 | 0.5 | Northern coastal, islands |
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests once (CI mode)
+npm run test:run
+```
+
+## Browser Requirements
+
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
 
 ## License
 
 MIT License - See LICENSE file
+
+## Contributing
+
+Contributions welcome! Please submit issues and pull requests to the GitHub repository.

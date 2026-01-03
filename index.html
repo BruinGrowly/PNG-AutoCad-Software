@@ -3,13 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Civil Engineering CAD Software for Papua New Guinea" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="Civil Engineering CAD Software for Papua New Guinea - Runs in any browser" />
+    <meta name="theme-color" content="#1a5f7a" />
     <title>PNG Civil CAD - Civil Engineering Design for Papua New Guinea</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
     <style>
-      /* Loading screen */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f5f5f5;
+      }
+      #root { width: 100vw; height: 100vh; }
       .loading-screen {
         position: fixed;
         inset: 0;
@@ -17,35 +21,20 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        background: linear-gradient(135deg, #1a5f7a, #2d8cb8);
         color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
-      .loading-logo {
-        font-size: 64px;
-        margin-bottom: 24px;
-      }
-      .loading-title {
-        font-size: 28px;
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-      .loading-subtitle {
-        font-size: 16px;
-        opacity: 0.8;
-        margin-bottom: 32px;
-      }
+      .loading-logo { font-size: 64px; margin-bottom: 24px; }
+      .loading-title { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+      .loading-subtitle { font-size: 16px; opacity: 0.8; margin-bottom: 32px; }
       .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
+        width: 40px; height: 40px;
+        border: 3px solid rgba(255,255,255,0.3);
         border-top-color: white;
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
+      @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>
@@ -57,6 +46,6 @@
         <div class="loading-spinner"></div>
       </div>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

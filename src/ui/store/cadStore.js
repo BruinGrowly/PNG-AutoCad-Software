@@ -5,115 +5,16 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  Project,
-  Entity,
-  Layer,
-  DrawingTool,
-  Point2D,
-  GridSettings,
-  SnapSettings,
-  Command,
-} from '../../core/types';
 import {
   createNewProject,
   createLayer,
   DEFAULT_GRID,
   DEFAULT_SNAP,
-  CommandHistory,
-} from '../../core/engine';
-
-interface CADState {
-  // Project
-  project: Project | null;
-  isModified: boolean;
-
-  // Tools
-  activeTool: DrawingTool;
-  previousTool: DrawingTool;
-
-  // Selection
-  selectedEntityIds: string[];
-
-  // Layers
-  activeLayerId: string;
-
-  // Drawing state
-  isDrawing: boolean;
-  currentPoints: Point2D[];
-  previewEntity: Entity | null;
-
-  // Grid and Snap
-  gridSettings: GridSettings;
-  snapSettings: SnapSettings;
-
-  // Command history
-  commandHistory: Command[];
-  undoIndex: number;
-
-  // Clipboard
-  clipboard: Entity[];
-
-  // Actions
-  setProject: (project: Project) => void;
-  updateProject: (updates: Partial<Project>) => void;
-  setActiveTool: (tool: DrawingTool) => void;
-  setActiveLayer: (layerId: string) => void;
-
-  // Entity operations
-  addEntity: (entity: Entity) => void;
-  updateEntity: (id: string, updates: Partial<Entity>) => void;
-  deleteEntity: (id: string) => void;
-  deleteSelectedEntities: () => void;
-
-  // Selection
-  selectEntity: (id: string, addToSelection?: boolean) => void;
-  selectEntities: (ids: string[]) => void;
-  clearSelection: () => void;
-  selectAll: () => void;
-
-  // Layer operations
-  addLayer: (name: string, color?: string) => void;
-  updateLayer: (id: string, updates: Partial<Layer>) => void;
-  deleteLayer: (id: string) => void;
-  toggleLayerVisibility: (id: string) => void;
-  toggleLayerLock: (id: string) => void;
-
-  // Drawing state
-  startDrawing: (point: Point2D) => void;
-  addDrawingPoint: (point: Point2D) => void;
-  finishDrawing: () => void;
-  cancelDrawing: () => void;
-  setPreviewEntity: (entity: Entity | null) => void;
-
-  // Grid and Snap
-  setGridSettings: (settings: Partial<GridSettings>) => void;
-  setSnapSettings: (settings: Partial<SnapSettings>) => void;
-  toggleGrid: () => void;
-  toggleSnap: () => void;
-
-  // Undo/Redo
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-
-  // Clipboard
-  copy: () => void;
-  cut: () => void;
-  paste: (offset?: Point2D) => void;
-
-  // Viewport
-  setZoom: (zoom: number) => void;
-  setPan: (pan: Point2D) => void;
-
-  // Reset
-  reset: () => void;
-}
+} from '../../core/engine.js';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-export const useCADStore = create<CADState>()(
+export const useCADStore = create(
   persist(
     (set, get) => ({
       // Initial state
@@ -155,7 +56,7 @@ export const useCADStore = create<CADState>()(
       addEntity: (entity) => set((state) => {
         if (!state.project) return state;
 
-        const command: Command = {
+        const command = {
           id: generateId(),
           type: 'add-entity',
           timestamp: new Date(),
@@ -272,7 +173,7 @@ export const useCADStore = create<CADState>()(
 
       deleteLayer: (id) => set((state) => {
         if (!state.project) return state;
-        if (state.project.layers.length <= 1) return state; // Keep at least one layer
+        if (state.project.layers.length <= 1) return state;
 
         return {
           project: {
@@ -403,7 +304,6 @@ export const useCADStore = create<CADState>()(
             startPoint: { x: e.startPoint.x + offset.x, y: e.startPoint.y + offset.y },
             endPoint: { x: e.endPoint.x + offset.x, y: e.endPoint.y + offset.y },
           }),
-          // Add offset handling for other entity types
         }));
 
         return {

@@ -4,16 +4,10 @@
  */
 
 import React from 'react';
-import type { Entity } from '../../core/types';
-import { useCADStore } from '../store/cadStore';
+import { useCADStore } from '../store/cadStore.js';
 import './PropertiesPanel.css';
 
-interface PropertiesPanelProps {
-  selectedEntityIds: string[];
-  entities: Entity[];
-}
-
-export function PropertiesPanel({ selectedEntityIds, entities }: PropertiesPanelProps) {
+export function PropertiesPanel({ selectedEntityIds, entities }) {
   const { updateEntity, project } = useCADStore();
 
   const selectedEntities = entities.filter((e) => selectedEntityIds.includes(e.id));
@@ -45,7 +39,7 @@ export function PropertiesPanel({ selectedEntityIds, entities }: PropertiesPanel
               selectedEntities.reduce((acc, e) => {
                 acc[e.type] = (acc[e.type] || 0) + 1;
                 return acc;
-              }, {} as Record<string, number>)
+              }, {})
             ).map(([type, count]) => (
               <div key={type} className="type-count">
                 <span>{type}</span>
@@ -148,7 +142,7 @@ export function PropertiesPanel({ selectedEntityIds, entities }: PropertiesPanel
               value={entity.style.lineType}
               onChange={(e) =>
                 updateEntity(entity.id, {
-                  style: { ...entity.style, lineType: e.target.value as any },
+                  style: { ...entity.style, lineType: e.target.value },
                 })
               }
             >
@@ -188,10 +182,7 @@ export function PropertiesPanel({ selectedEntityIds, entities }: PropertiesPanel
   );
 }
 
-function renderGeometryProperties(
-  entity: Entity,
-  updateEntity: (id: string, updates: Partial<Entity>) => void
-) {
+function renderGeometryProperties(entity, updateEntity) {
   switch (entity.type) {
     case 'line':
       return (
@@ -204,7 +195,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   startPoint: { ...entity.startPoint, x: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -216,7 +207,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   startPoint: { ...entity.startPoint, y: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -228,7 +219,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   endPoint: { ...entity.endPoint, x: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -240,7 +231,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   endPoint: { ...entity.endPoint, y: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -267,7 +258,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   center: { ...entity.center, x: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -279,7 +270,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   center: { ...entity.center, y: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -289,7 +280,7 @@ function renderGeometryProperties(
               type="number"
               value={entity.radius.toFixed(2)}
               onChange={(e) =>
-                updateEntity(entity.id, { radius: Number(e.target.value) } as any)
+                updateEntity(entity.id, { radius: Number(e.target.value) })
               }
               min={0}
             />
@@ -320,7 +311,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   topLeft: { ...entity.topLeft, x: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -332,7 +323,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   topLeft: { ...entity.topLeft, y: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -342,7 +333,7 @@ function renderGeometryProperties(
               type="number"
               value={entity.width.toFixed(2)}
               onChange={(e) =>
-                updateEntity(entity.id, { width: Number(e.target.value) } as any)
+                updateEntity(entity.id, { width: Number(e.target.value) })
               }
               min={0}
             />
@@ -353,7 +344,7 @@ function renderGeometryProperties(
               type="number"
               value={entity.height.toFixed(2)}
               onChange={(e) =>
-                updateEntity(entity.id, { height: Number(e.target.value) } as any)
+                updateEntity(entity.id, { height: Number(e.target.value) })
               }
               min={0}
             />
@@ -380,7 +371,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   position: { ...entity.position, x: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -392,7 +383,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   position: { ...entity.position, y: Number(e.target.value) },
-                } as any)
+                })
               }
             />
           </div>
@@ -402,7 +393,7 @@ function renderGeometryProperties(
               type="text"
               value={entity.content}
               onChange={(e) =>
-                updateEntity(entity.id, { content: e.target.value } as any)
+                updateEntity(entity.id, { content: e.target.value })
               }
             />
           </div>
@@ -412,7 +403,7 @@ function renderGeometryProperties(
               type="number"
               value={entity.fontSize}
               onChange={(e) =>
-                updateEntity(entity.id, { fontSize: Number(e.target.value) } as any)
+                updateEntity(entity.id, { fontSize: Number(e.target.value) })
               }
               min={1}
             />
@@ -425,7 +416,7 @@ function renderGeometryProperties(
               onChange={(e) =>
                 updateEntity(entity.id, {
                   rotation: (Number(e.target.value) * Math.PI) / 180,
-                } as any)
+                })
               }
             />
           </div>

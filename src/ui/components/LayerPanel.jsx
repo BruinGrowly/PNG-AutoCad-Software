@@ -4,17 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import type { Layer } from '../../core/types';
-import { useCADStore } from '../store/cadStore';
+import { useCADStore } from '../store/cadStore.js';
 import './LayerPanel.css';
 
-interface LayerPanelProps {
-  layers: Layer[];
-  activeLayerId: string;
-  onLayerSelect: (layerId: string) => void;
-}
-
-export function LayerPanel({ layers, activeLayerId, onLayerSelect }: LayerPanelProps) {
+export function LayerPanel({ layers, activeLayerId, onLayerSelect }) {
   const [newLayerName, setNewLayerName] = useState('');
   const [isAddingLayer, setIsAddingLayer] = useState(false);
 
@@ -34,7 +27,7 @@ export function LayerPanel({ layers, activeLayerId, onLayerSelect }: LayerPanelP
     }
   };
 
-  const handleColorChange = (layerId: string, color: string) => {
+  const handleColorChange = (layerId, color) => {
     updateLayer(layerId, { color });
   };
 
