@@ -7,7 +7,7 @@
 
 import { generateId } from '../core/engine.js';
 import { getClimateDataForProvince } from './climate.js';
-import { normalizeProvince, getProvinceInfo } from './provinces.js';
+import { normalizeProvinceName, findSimilarProvinces } from './provinces.js';
 
 // ============================================
 // Seismic Hazard Data
@@ -89,12 +89,12 @@ export function getBuildingParameters(params) {
     } = params;
 
     // Normalize province name
-    const normalizedProvince = normalizeProvince(province);
+    const normalizedProvince = normalizeProvinceName(province);
     if (!normalizedProvince) {
         return {
             success: false,
             error: `Unknown province: ${province}. Please check spelling.`,
-            suggestions: getProvinceInfo(province)?.suggestions || [],
+            suggestions: findSimilarProvinces(province) || [],
         };
     }
 
