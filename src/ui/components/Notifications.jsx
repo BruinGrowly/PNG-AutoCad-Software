@@ -6,44 +6,16 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import './Notifications.css';
 
-export type NotificationType = 'success' | 'error' | 'warning' | 'info';
-
-export interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message?: string;
-  duration?: number;  // ms, 0 = persistent
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  dismissible?: boolean;
-  timestamp: Date;
-}
-
-interface NotificationContextValue {
-  notifications: Notification[];
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => string;
-  removeNotification: (id: string) => void;
-  clearAll: () => void;
-  // Convenience methods
-  success: (title: string, message?: string, options?: Partial<Notification>) => string;
-  error: (title: string, message?: string, options?: Partial<Notification>) => string;
-  warning: (title: string, message?: string, options?: Partial<Notification>) => string;
-  info: (title: string, message?: string, options?: Partial<Notification>) => string;
-}
-
-const NotificationContext = createContext<NotificationContextValue | null>(null);
+const NotificationContext = createContext(null);
 
 let notificationCounter = 0;
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export function NotificationProvider({ children }) {
+  const [notifications, setNotifications] = useState([]);
 
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>): string => {
+  const addNotification = useCallback((notification) => {
     const id = `notification-${++notificationCounter}`;
-    const newNotification: Notification = {
+    const newNotification = {
       ...notification,
       id,
       timestamp: new Date(),
@@ -55,7 +27,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return id;
   }, []);
 
-  const removeNotification = useCallback((id: string) => {
+  const removeNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 
@@ -63,19 +35,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications([]);
   }, []);
 
-  const success = useCallback((title: string, message?: string, options?: Partial<Notification>) => {
+  const success = useCallback((title, message, options = {}) => {
     return addNotification({ type: 'success', title, message, ...options });
   }, [addNotification]);
 
-  const error = useCallback((title: string, message?: string, options?: Partial<Notification>) => {
+  const error = useCallback((title, message, options = {}) => {
     return addNotification({ type: 'error', title, message, duration: 0, ...options });
   }, [addNotification]);
 
-  const warning = useCallback((title: string, message?: string, options?: Partial<Notification>) => {
+  const warning = useCallback((title, message, options = {}) => {
     return addNotification({ type: 'warning', title, message, duration: 8000, ...options });
   }, [addNotification]);
 
-  const info = useCallback((title: string, message?: string, options?: Partial<Notification>) => {
+  const info = useCallback((title, message, options = {}) => {
     return addNotification({ type: 'info', title, message, ...options });
   }, [addNotification]);
 
@@ -101,7 +73,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   );
 }
 
-export function useNotifications(): NotificationContextValue {
+export function useNotifications() {
   const context = useContext(NotificationContext);
   if (!context) {
     throw new Error('useNotifications must be used within a NotificationProvider');
@@ -109,12 +81,7 @@ export function useNotifications(): NotificationContextValue {
   return context;
 }
 
-interface NotificationContainerProps {
-  notifications: Notification[];
-  onDismiss: (id: string) => void;
-}
-
-function NotificationContainer({ notifications, onDismiss }: NotificationContainerProps) {
+function NotificationContainer({ notifications, onDismiss }) {
   return (
     <div className="notification-container">
       {notifications.map(notification => (
@@ -128,12 +95,7 @@ function NotificationContainer({ notifications, onDismiss }: NotificationContain
   );
 }
 
-interface NotificationItemProps {
-  notification: Notification;
-  onDismiss: () => void;
-}
-
-function NotificationItem({ notification, onDismiss }: NotificationItemProps) {
+function NotificationItem({ notification, onDismiss }) {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
@@ -151,7 +113,7 @@ function NotificationItem({ notification, onDismiss }: NotificationItemProps) {
     setTimeout(onDismiss, 300);
   };
 
-  const icons: Record<NotificationType, string> = {
+  const icons = {
     success: '✓',
     error: '✕',
     warning: '⚠',
@@ -170,7 +132,7 @@ function NotificationItem({ notification, onDismiss }: NotificationItemProps) {
           <button
             className="notification-action"
             onClick={() => {
-              notification.action!.onClick();
+              notification.action.onClick();
               handleDismiss();
             }}
           >

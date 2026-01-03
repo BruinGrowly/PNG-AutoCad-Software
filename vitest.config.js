@@ -1,19 +1,21 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    include: ['tests/**/*.test.js', 'tests/**/*.test.jsx'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      include: ['src/**/*.js', 'src/**/*.jsx'],
       exclude: [
-        'src/**/*.d.ts',
-        'src/**/index.ts',
-        'src/main.tsx',
+        'src/**/index.js',
+        'src/main.jsx',
         'src/desktop/**',
       ],
       thresholds: {

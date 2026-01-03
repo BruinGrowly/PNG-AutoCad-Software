@@ -14,17 +14,12 @@ import {
   calculateSeismicDesign,
   getFoundationRecommendations,
   generateSeismicReport,
-  type SoilClass,
-  type ImportanceCategory,
-  type StructuralSystem,
-  type SeismicDesignInput,
-} from '../../src/png/seismic';
-import type { PNGProvince, PNGSeismicZone } from '../../src/core/types';
+} from '../../src/png/seismic.js';
 
 describe('Seismic Zone Functions', () => {
   describe('getSeismicZone', () => {
     it('should return zone-4 for high-risk northern coastal provinces', () => {
-      const zone4Provinces: PNGProvince[] = [
+      const zone4Provinces = [
         'Madang',
         'East Sepik',
         'Sandaun',
@@ -42,7 +37,7 @@ describe('Seismic Zone Functions', () => {
     });
 
     it('should return zone-3 for southern coastal provinces', () => {
-      const zone3Provinces: PNGProvince[] = [
+      const zone3Provinces = [
         'Milne Bay',
         'Oro',
         'Gulf',
@@ -56,7 +51,7 @@ describe('Seismic Zone Functions', () => {
     });
 
     it('should return zone-2 for highland provinces', () => {
-      const zone2Provinces: PNGProvince[] = [
+      const zone2Provinces = [
         'Eastern Highlands',
         'Western Highlands',
         'Southern Highlands',
@@ -146,7 +141,7 @@ describe('Soil Classification', () => {
     });
 
     it('should include shear wave velocity ranges', () => {
-      const classes: SoilClass[] = ['A', 'B', 'C', 'D', 'E'];
+      const classes = ['A', 'B', 'C', 'D', 'E'];
 
       classes.forEach(cls => {
         const data = getSoilClassData(cls);
@@ -226,7 +221,7 @@ describe('Structural Systems', () => {
     });
 
     it('should recommend timber-frame for all zones', () => {
-      const zones: PNGSeismicZone[] = ['zone-1', 'zone-2', 'zone-3', 'zone-4'];
+      const zones = ['zone-1', 'zone-2', 'zone-3', 'zone-4'];
 
       zones.forEach(zone => {
         const systems = getRecommendedSystems(zone);
@@ -238,7 +233,7 @@ describe('Structural Systems', () => {
 
 describe('Seismic Design Calculations', () => {
   describe('calculateSeismicDesign', () => {
-    const baseInput: SeismicDesignInput = {
+    const baseInput = {
       province: 'Madang',
       soilClass: 'C',
       importanceCategory: 2,
@@ -288,7 +283,7 @@ describe('Seismic Design Calculations', () => {
     });
 
     it('should warn if building exceeds height limit', () => {
-      const tallInput: SeismicDesignInput = {
+      const tallInput = {
         ...baseInput,
         buildingHeight: 15,  // Exceeds 10m limit for timber
         numberOfStoreys: 5,
@@ -300,7 +295,7 @@ describe('Seismic Design Calculations', () => {
     });
 
     it('should warn if system not suitable for zone', () => {
-      const unsuitableInput: SeismicDesignInput = {
+      const unsuitableInput = {
         ...baseInput,
         structuralSystem: 'masonry-unreinforced',
       };
@@ -311,7 +306,7 @@ describe('Seismic Design Calculations', () => {
     });
 
     it('should recommend ground improvement for soft soils', () => {
-      const softSoilInput: SeismicDesignInput = {
+      const softSoilInput = {
         ...baseInput,
         soilClass: 'E',
       };
@@ -371,7 +366,7 @@ describe('Foundation Recommendations', () => {
 
 describe('Seismic Report Generation', () => {
   describe('generateSeismicReport', () => {
-    const input: SeismicDesignInput = {
+    const input = {
       province: 'East New Britain',
       soilClass: 'C',
       importanceCategory: 3,
@@ -406,7 +401,7 @@ describe('Seismic Report Generation', () => {
     });
 
     it('should work for all importance categories', () => {
-      const categories: ImportanceCategory[] = [1, 2, 3, 4];
+      const categories = [1, 2, 3, 4];
 
       categories.forEach(cat => {
         const modifiedInput = { ...input, importanceCategory: cat };

@@ -8,13 +8,11 @@ import {
   createLayer,
   createNewProject,
   createInitialState,
-  type CADEngineState,
-} from '../../src/core/engine';
-import { generateClimateReport } from '../../src/png/climate';
-import { generateSeismicReport, type SeismicDesignInput } from '../../src/png/seismic';
-import { generateFloodReport } from '../../src/png/flood';
-import { getMaterialsByAvailability, getMaterialsForApplication } from '../../src/png/materials';
-import type { PNGProvince, PNGTerrainType } from '../../src/core/types';
+} from '../../src/core/engine.js';
+import { generateClimateReport } from '../../src/png/climate.js';
+import { generateSeismicReport } from '../../src/png/seismic.js';
+import { generateFloodReport } from '../../src/png/flood.js';
+import { getMaterialsByAvailability, getMaterialsForApplication } from '../../src/png/materials.js';
 
 describe('Project Workflow Integration', () => {
   describe('Complete Project Setup', () => {
@@ -57,8 +55,8 @@ describe('Project Workflow Integration', () => {
 
 describe('PNG Analysis Integration', () => {
   describe('Combined Analysis for Port Moresby', () => {
-    const province: PNGProvince = 'National Capital District';
-    const terrainType: PNGTerrainType = 'coastal-lowland';
+    const province = 'National Capital District';
+    const terrainType = 'coastal-lowland';
 
     it('should generate complete site analysis', () => {
       // Climate analysis
@@ -67,7 +65,7 @@ describe('PNG Analysis Integration', () => {
       expect(climateReport.climateZone).toBe('tropical-coastal');
 
       // Seismic analysis
-      const seismicInput: SeismicDesignInput = {
+      const seismicInput = {
         province,
         soilClass: 'C',
         importanceCategory: 3,
@@ -108,12 +106,12 @@ describe('PNG Analysis Integration', () => {
   });
 
   describe('Combined Analysis for Highland Province', () => {
-    const province: PNGProvince = 'Eastern Highlands';
-    const terrainType: PNGTerrainType = 'highland-valley';
+    const province = 'Eastern Highlands';
+    const terrainType = 'highland-valley';
 
     it('should identify different requirements for highlands', () => {
       const climateReport = generateClimateReport(province, terrainType, 'residential');
-      const seismicInput: SeismicDesignInput = {
+      const seismicInput = {
         province,
         soilClass: 'B',
         importanceCategory: 2,
@@ -136,12 +134,12 @@ describe('PNG Analysis Integration', () => {
   });
 
   describe('Combined Analysis for High-Risk Zone', () => {
-    const province: PNGProvince = 'Madang';
-    const terrainType: PNGTerrainType = 'riverine-floodplain';
+    const province = 'Madang';
+    const terrainType = 'riverine-floodplain';
 
     it('should provide comprehensive high-risk analysis', () => {
       const climateReport = generateClimateReport(province, terrainType, 'community');
-      const seismicInput: SeismicDesignInput = {
+      const seismicInput = {
         province,
         soilClass: 'D',
         importanceCategory: 3,  // Community building = important
@@ -176,7 +174,7 @@ describe('PNG Analysis Integration', () => {
 
   describe('Material Selection Workflow', () => {
     it('should find suitable materials for specific application', () => {
-      const province: PNGProvince = 'Morobe';
+      const province = 'Morobe';
 
       // Get all available materials
       const allMaterials = getMaterialsByAvailability(province);
@@ -204,7 +202,7 @@ describe('PNG Analysis Integration', () => {
 });
 
 describe('Multi-Province Comparison', () => {
-  const provinces: PNGProvince[] = [
+  const provinces = [
     'National Capital District',
     'Eastern Highlands',
     'Madang',
@@ -243,9 +241,9 @@ describe('Multi-Province Comparison', () => {
 
   it('should show increasing seismic requirements for higher zones', () => {
     const baseInput = {
-      soilClass: 'C' as const,
-      importanceCategory: 2 as const,
-      structuralSystem: 'timber-frame' as const,
+      soilClass: 'C',
+      importanceCategory: 2,
+      structuralSystem: 'timber-frame',
       buildingHeight: 6,
       buildingWeight: 400,
       numberOfStoreys: 2,
@@ -272,8 +270,8 @@ describe('Complete Site Assessment Workflow', () => {
     const project = createNewProject('Community Hall - Madang');
 
     // Site location
-    const province: PNGProvince = 'Madang';
-    const terrain: PNGTerrainType = 'coastal-lowland';
+    const province = 'Madang';
+    const terrain = 'coastal-lowland';
 
     // 1. Climate Analysis
     const climate = generateClimateReport(province, terrain, 'community');

@@ -2,29 +2,13 @@
  * Core CAD Engine - Handles drawing, selection, and entity management
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import type {
-  Entity,
-  Layer,
-  Point2D,
-  BoundingBox,
-  DrawingTool,
-  EntityStyle,
-  LineType,
-  Command,
-  Project,
-  UnitSettings,
-  GridSettings,
-  SnapSettings,
-  Viewport,
-} from './types';
-import { getEntityBoundingBox, boundingBoxContainsPoint, distance } from './geometry';
+import { getEntityBoundingBox, boundingBoxContainsPoint, distance } from './geometry.js';
 
 // ============================================
-// Unique ID Generator (fallback if uuid not available)
+// Unique ID Generator
 // ============================================
 
-function generateId(): string {
+export function generateId() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -36,14 +20,16 @@ function generateId(): string {
 // Default Styles and Settings
 // ============================================
 
-export const DEFAULT_STYLE: EntityStyle = {
+/** @type {{ strokeColor: string, strokeWidth: number, opacity: number, lineType: string }} */
+export const DEFAULT_STYLE = {
   strokeColor: '#000000',
   strokeWidth: 1,
   opacity: 1,
   lineType: 'continuous',
 };
 
-export const DEFAULT_GRID: GridSettings = {
+/** @type {{ visible: boolean, spacing: number, majorLineEvery: number, color: string, majorColor: string, opacity: number }} */
+export const DEFAULT_GRID = {
   visible: true,
   spacing: 10,
   majorLineEvery: 10,
@@ -52,7 +38,8 @@ export const DEFAULT_GRID: GridSettings = {
   opacity: 0.5,
 };
 
-export const DEFAULT_SNAP: SnapSettings = {
+/** @type {Object} */
+export const DEFAULT_SNAP = {
   enabled: true,
   gridSnap: true,
   endpointSnap: true,
@@ -65,7 +52,8 @@ export const DEFAULT_SNAP: SnapSettings = {
   snapDistance: 10,
 };
 
-export const DEFAULT_UNITS: UnitSettings = {
+/** @type {{ lengthUnit: string, areaUnit: string, angleUnit: string, precision: number }} */
+export const DEFAULT_UNITS = {
   lengthUnit: 'm',
   areaUnit: 'sqm',
   angleUnit: 'degrees',
@@ -76,7 +64,13 @@ export const DEFAULT_UNITS: UnitSettings = {
 // Layer Management
 // ============================================
 
-export function createLayer(name: string, color: string = '#000000'): Layer {
+/**
+ * Create a new layer
+ * @param {string} name - Layer name
+ * @param {string} color - Layer color (default: '#000000')
+ * @returns {Object} Layer object
+ */
+export function createLayer(name, color = '#000000') {
   return {
     id: generateId(),
     name,
@@ -89,7 +83,7 @@ export function createLayer(name: string, color: string = '#000000'): Layer {
   };
 }
 
-export const DEFAULT_LAYERS: Layer[] = [
+export const DEFAULT_LAYERS = [
   { id: 'layer-0', name: '0', visible: true, locked: false, color: '#000000', lineType: 'continuous', lineWeight: 1, order: 0 },
   { id: 'layer-construction', name: 'Construction', visible: true, locked: false, color: '#808080', lineType: 'dashed', lineWeight: 0.5, order: 1 },
   { id: 'layer-dimensions', name: 'Dimensions', visible: true, locked: false, color: '#0000FF', lineType: 'continuous', lineWeight: 0.5, order: 2 },
@@ -106,12 +100,15 @@ export const DEFAULT_LAYERS: Layer[] = [
 // Entity Creation
 // ============================================
 
-export function createEntity<T extends Entity>(
-  type: T['type'],
-  properties: Omit<T, 'id' | 'type' | 'visible' | 'locked' | 'style'>,
-  layerId: string = 'layer-0',
-  style: Partial<EntityStyle> = {}
-): T {
+/**
+ * Create a new entity
+ * @param {string} type - Entity type
+ * @param {Object} properties - Entity properties
+ * @param {string} layerId - Layer ID (default: 'layer-0')
+ * @param {Object} style - Entity style
+ * @returns {Object} Entity object
+ */
+export function createEntity(type, properties, layerId = 'layer-0', style = {}) {
   return {
     id: generateId(),
     type,
@@ -120,16 +117,23 @@ export function createEntity<T extends Entity>(
     locked: false,
     style: { ...DEFAULT_STYLE, ...style },
     ...properties,
-  } as T;
+  };
 }
 
 // ============================================
 // Entity Selection
 // ============================================
 
-export function isPointNearEntity(point: Point2D, entity: Entity, tolerance: number = 5): boolean {
+/**
+ * Check if a point is near an entity
+ * @param {{ x: number, y: number }} point
+ * @param {Object} entity
+ * @param {number} tolerance
+ * @returns {boolean}
+ */
+export function isPointNearEntity(point, entity, tolerance = 5) {
   const bbox = getEntityBoundingBox(entity);
-  const expandedBbox: BoundingBox = {
+  const expandedBbox = {
     minX: bbox.minX - tolerance,
     minY: bbox.minY - tolerance,
     maxX: bbox.maxX + tolerance,
@@ -177,7 +181,7 @@ export function isPointNearEntity(point: Point2D, entity: Entity, tolerance: num
   }
 }
 
-function distanceToLineSegment(point: Point2D, lineStart: Point2D, lineEnd: Point2D): number {
+function distanceToLineSegment(point, lineStart, lineEnd) {
   const A = point.x - lineStart.x;
   const B = point.y - lineStart.y;
   const C = lineEnd.x - lineStart.x;
@@ -191,7 +195,7 @@ function distanceToLineSegment(point: Point2D, lineStart: Point2D, lineEnd: Poin
     param = dot / lenSq;
   }
 
-  let xx: number, yy: number;
+  let xx, yy;
 
   if (param < 0) {
     xx = lineStart.x;
@@ -207,13 +211,7 @@ function distanceToLineSegment(point: Point2D, lineStart: Point2D, lineEnd: Poin
   return distance(point, { x: xx, y: yy });
 }
 
-function isPointNearRectangle(
-  point: Point2D,
-  topLeft: Point2D,
-  width: number,
-  height: number,
-  tolerance: number
-): boolean {
+function isPointNearRectangle(point, topLeft, width, height, tolerance) {
   const corners = [
     topLeft,
     { x: topLeft.x + width, y: topLeft.y },
@@ -230,7 +228,13 @@ function isPointNearRectangle(
   return false;
 }
 
-export function selectEntitiesInBox(entities: Entity[], box: BoundingBox): Entity[] {
+/**
+ * Select entities within a bounding box
+ * @param {Array} entities
+ * @param {Object} box
+ * @returns {Array}
+ */
+export function selectEntitiesInBox(entities, box) {
   return entities.filter(entity => {
     const entityBox = getEntityBoundingBox(entity);
     return entityBox.minX >= box.minX &&
@@ -244,13 +248,14 @@ export function selectEntitiesInBox(entities: Entity[], box: BoundingBox): Entit
 // Snap Points
 // ============================================
 
-export interface SnapPoint {
-  point: Point2D;
-  type: 'endpoint' | 'midpoint' | 'center' | 'intersection' | 'perpendicular' | 'tangent' | 'nearest' | 'grid';
-}
-
-export function getSnapPoints(entities: Entity[], settings: SnapSettings): SnapPoint[] {
-  const snapPoints: SnapPoint[] = [];
+/**
+ * Get snap points from entities
+ * @param {Array} entities
+ * @param {Object} settings
+ * @returns {Array<{ point: { x: number, y: number }, type: string }>}
+ */
+export function getSnapPoints(entities, settings) {
+  const snapPoints = [];
 
   for (const entity of entities) {
     if (!entity.visible) continue;
@@ -294,7 +299,6 @@ export function getSnapPoints(entities: Entity[], settings: SnapSettings): SnapP
           snapPoints.push({ point: entity.center, type: 'center' });
         }
         if (settings.endpointSnap) {
-          // Quadrant points
           snapPoints.push({ point: { x: entity.center.x + entity.radius, y: entity.center.y }, type: 'endpoint' });
           snapPoints.push({ point: { x: entity.center.x - entity.radius, y: entity.center.y }, type: 'endpoint' });
           snapPoints.push({ point: { x: entity.center.x, y: entity.center.y + entity.radius }, type: 'endpoint' });
@@ -328,12 +332,15 @@ export function getSnapPoints(entities: Entity[], settings: SnapSettings): SnapP
   return snapPoints;
 }
 
-export function findNearestSnapPoint(
-  point: Point2D,
-  snapPoints: SnapPoint[],
-  maxDistance: number
-): SnapPoint | null {
-  let nearest: SnapPoint | null = null;
+/**
+ * Find nearest snap point
+ * @param {{ x: number, y: number }} point
+ * @param {Array} snapPoints
+ * @param {number} maxDistance
+ * @returns {Object|null}
+ */
+export function findNearestSnapPoint(point, snapPoints, maxDistance) {
+  let nearest = null;
   let minDist = maxDistance;
 
   for (const sp of snapPoints) {
@@ -351,7 +358,13 @@ export function findNearestSnapPoint(
 // Grid Snap
 // ============================================
 
-export function snapToGrid(point: Point2D, gridSpacing: number): Point2D {
+/**
+ * Snap point to grid
+ * @param {{ x: number, y: number }} point
+ * @param {number} gridSpacing
+ * @returns {{ x: number, y: number }}
+ */
+export function snapToGrid(point, gridSpacing) {
   return {
     x: Math.round(point.x / gridSpacing) * gridSpacing,
     y: Math.round(point.y / gridSpacing) * gridSpacing,
@@ -363,11 +376,13 @@ export function snapToGrid(point: Point2D, gridSpacing: number): Point2D {
 // ============================================
 
 export class CommandHistory {
-  private undoStack: Command[] = [];
-  private redoStack: Command[] = [];
-  private maxHistory: number = 100;
+  constructor() {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.maxHistory = 100;
+  }
 
-  execute(command: Command): void {
+  execute(command) {
     command.redo();
     this.undoStack.push(command);
     this.redoStack = [];
@@ -377,7 +392,7 @@ export class CommandHistory {
     }
   }
 
-  undo(): boolean {
+  undo() {
     const command = this.undoStack.pop();
     if (command) {
       command.undo();
@@ -387,7 +402,7 @@ export class CommandHistory {
     return false;
   }
 
-  redo(): boolean {
+  redo() {
     const command = this.redoStack.pop();
     if (command) {
       command.redo();
@@ -397,15 +412,15 @@ export class CommandHistory {
     return false;
   }
 
-  canUndo(): boolean {
+  canUndo() {
     return this.undoStack.length > 0;
   }
 
-  canRedo(): boolean {
+  canRedo() {
     return this.redoStack.length > 0;
   }
 
-  clear(): void {
+  clear() {
     this.undoStack = [];
     this.redoStack = [];
   }
@@ -415,11 +430,7 @@ export class CommandHistory {
 // Entity Commands
 // ============================================
 
-export function createAddEntityCommand(
-  entities: Entity[],
-  newEntity: Entity,
-  setEntities: (entities: Entity[]) => void
-): Command {
+export function createAddEntityCommand(entities, newEntity, setEntities) {
   return {
     id: generateId(),
     type: 'add-entity',
@@ -430,11 +441,7 @@ export function createAddEntityCommand(
   };
 }
 
-export function createDeleteEntityCommand(
-  entities: Entity[],
-  entityId: string,
-  setEntities: (entities: Entity[]) => void
-): Command {
+export function createDeleteEntityCommand(entities, entityId, setEntities) {
   const entity = entities.find(e => e.id === entityId);
   if (!entity) throw new Error(`Entity ${entityId} not found`);
 
@@ -448,12 +455,7 @@ export function createDeleteEntityCommand(
   };
 }
 
-export function createModifyEntityCommand(
-  entities: Entity[],
-  entityId: string,
-  newProperties: Partial<Entity>,
-  setEntities: (entities: Entity[]) => void
-): Command {
+export function createModifyEntityCommand(entities, entityId, newProperties, setEntities) {
   const entityIndex = entities.findIndex(e => e.id === entityId);
   if (entityIndex === -1) throw new Error(`Entity ${entityId} not found`);
 
@@ -472,7 +474,7 @@ export function createModifyEntityCommand(
     },
     redo: () => {
       const updated = [...entities];
-      updated[entityIndex] = newEntity as Entity;
+      updated[entityIndex] = newEntity;
       setEntities(updated);
     },
   };
@@ -482,7 +484,7 @@ export function createModifyEntityCommand(
 // Viewport Management
 // ============================================
 
-export function createViewport(name: string): Viewport {
+export function createViewport(name) {
   return {
     id: generateId(),
     name,
@@ -494,14 +496,14 @@ export function createViewport(name: string): Viewport {
   };
 }
 
-export function screenToWorld(screenPoint: Point2D, viewport: Viewport, canvasSize: { width: number; height: number }): Point2D {
+export function screenToWorld(screenPoint, viewport, canvasSize) {
   return {
     x: (screenPoint.x - canvasSize.width / 2 - viewport.pan.x) / viewport.zoom,
     y: (screenPoint.y - canvasSize.height / 2 - viewport.pan.y) / viewport.zoom,
   };
 }
 
-export function worldToScreen(worldPoint: Point2D, viewport: Viewport, canvasSize: { width: number; height: number }): Point2D {
+export function worldToScreen(worldPoint, viewport, canvasSize) {
   return {
     x: worldPoint.x * viewport.zoom + canvasSize.width / 2 + viewport.pan.x,
     y: worldPoint.y * viewport.zoom + canvasSize.height / 2 + viewport.pan.y,
@@ -512,7 +514,7 @@ export function worldToScreen(worldPoint: Point2D, viewport: Viewport, canvasSiz
 // Project Management
 // ============================================
 
-export function createNewProject(name: string): Project {
+export function createNewProject(name) {
   return {
     id: generateId(),
     name,
@@ -537,20 +539,10 @@ export function createNewProject(name: string): Project {
 }
 
 // ============================================
-// Export Engine State
+// Engine State
 // ============================================
 
-export interface CADEngineState {
-  project: Project;
-  activeTool: DrawingTool;
-  selectedEntityIds: string[];
-  activeLayerId: string;
-  gridSettings: GridSettings;
-  snapSettings: SnapSettings;
-  commandHistory: CommandHistory;
-}
-
-export function createInitialState(projectName: string = 'Untitled'): CADEngineState {
+export function createInitialState(projectName = 'Untitled') {
   return {
     project: createNewProject(projectName),
     activeTool: 'select',

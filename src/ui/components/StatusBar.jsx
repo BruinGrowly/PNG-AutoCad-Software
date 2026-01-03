@@ -4,51 +4,30 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { formatLastSaveTime } from '../hooks/useAutoSave';
+import { formatLastSaveTime } from '../hooks/useAutoSave.js';
 import './StatusBar.css';
 
-export interface StatusBarProps {
-  // Coordinates
-  cursorPosition: { x: number; y: number } | null;
-  worldCoordinates: { x: number; y: number } | null;
-
-  // Current state
-  activeTool: string;
-  activeLayer: string;
-  zoom: number;
-  units: 'mm' | 'm' | 'ft' | 'in';
-
-  // Toggles
-  gridEnabled: boolean;
-  snapEnabled: boolean;
-  orthoEnabled: boolean;
-  onToggleGrid: () => void;
-  onToggleSnap: () => void;
-  onToggleOrtho: () => void;
-
-  // Measurements (while drawing)
-  measurement?: {
-    distance?: number;
-    angle?: number;
-    area?: number;
-  };
-
-  // Selection info
-  selectedCount: number;
-
-  // Save status
-  lastSaveTime: Date | null;
-  hasUnsavedChanges: boolean;
-  isSaving: boolean;
-
-  // Optional: PNG analysis status
-  analysisStatus?: {
-    province?: string;
-    seismicZone?: string;
-    climateZone?: string;
-  };
-}
-
+/**
+ * @param {Object} props
+ * @param {{ x: number, y: number } | null} props.cursorPosition
+ * @param {{ x: number, y: number } | null} props.worldCoordinates
+ * @param {string} props.activeTool
+ * @param {string} props.activeLayer
+ * @param {number} props.zoom
+ * @param {'mm' | 'm' | 'ft' | 'in'} props.units
+ * @param {boolean} props.gridEnabled
+ * @param {boolean} props.snapEnabled
+ * @param {boolean} props.orthoEnabled
+ * @param {Function} props.onToggleGrid
+ * @param {Function} props.onToggleSnap
+ * @param {Function} props.onToggleOrtho
+ * @param {Object} [props.measurement]
+ * @param {number} props.selectedCount
+ * @param {Date | null} props.lastSaveTime
+ * @param {boolean} props.hasUnsavedChanges
+ * @param {boolean} props.isSaving
+ * @param {Object} [props.analysisStatus]
+ */
 export function StatusBar({
   cursorPosition,
   worldCoordinates,
@@ -68,7 +47,7 @@ export function StatusBar({
   hasUnsavedChanges,
   isSaving,
   analysisStatus,
-}: StatusBarProps) {
+}) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -76,7 +55,7 @@ export function StatusBar({
     return () => clearInterval(interval);
   }, []);
 
-  const formatCoordinate = (value: number): string => {
+  const formatCoordinate = (value) => {
     switch (units) {
       case 'mm': return `${(value * 1000).toFixed(0)}`;
       case 'm': return value.toFixed(3);
@@ -86,10 +65,10 @@ export function StatusBar({
     }
   };
 
-  const formatDistance = (value: number): string => `${formatCoordinate(value)} ${units}`;
-  const formatAngle = (degrees: number): string => `${degrees.toFixed(1)}°`;
+  const formatDistance = (value) => `${formatCoordinate(value)} ${units}`;
+  const formatAngle = (degrees) => `${degrees.toFixed(1)}°`;
 
-  const toolDisplayNames: Record<string, string> = {
+  const toolDisplayNames = {
     select: 'Select', line: 'Line', polyline: 'Polyline', rectangle: 'Rectangle',
     circle: 'Circle', arc: 'Arc', text: 'Text', dimension: 'Dimension', measure: 'Measure',
   };

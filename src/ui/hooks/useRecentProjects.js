@@ -5,25 +5,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export interface RecentProject {
-  id: string;
-  name: string;
-  path?: string;
-  lastOpened: Date;
-  thumbnail?: string;
-  province?: string;
-  buildingType?: string;
-}
-
 const RECENT_PROJECTS_KEY = 'png-cad-recent-projects';
 const MAX_RECENT_PROJECTS = 10;
 
-function loadRecentProjects(): RecentProject[] {
+function loadRecentProjects() {
   try {
     const stored = localStorage.getItem(RECENT_PROJECTS_KEY);
     if (!stored) return [];
 
-    const projects = JSON.parse(stored) as RecentProject[];
+    const projects = JSON.parse(stored);
     return projects.map(p => ({
       ...p,
       lastOpened: new Date(p.lastOpened),
@@ -33,23 +23,21 @@ function loadRecentProjects(): RecentProject[] {
   }
 }
 
-function saveRecentProjects(projects: RecentProject[]): void {
+function saveRecentProjects(projects) {
   localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(projects));
 }
 
 export function useRecentProjects() {
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  const [recentProjects, setRecentProjects] = useState([]);
 
   useEffect(() => {
     setRecentProjects(loadRecentProjects());
   }, []);
 
-  const addRecentProject = useCallback((project: Omit<RecentProject, 'lastOpened'>) => {
+  const addRecentProject = useCallback((project) => {
     setRecentProjects(prev => {
-      // Remove if already exists
       const filtered = prev.filter(p => p.id !== project.id);
 
-      // Add to beginning with current timestamp
       const updated = [
         { ...project, lastOpened: new Date() },
         ...filtered,
@@ -60,7 +48,7 @@ export function useRecentProjects() {
     });
   }, []);
 
-  const removeRecentProject = useCallback((id: string) => {
+  const removeRecentProject = useCallback((id) => {
     setRecentProjects(prev => {
       const updated = prev.filter(p => p.id !== id);
       saveRecentProjects(updated);
@@ -82,21 +70,7 @@ export function useRecentProjects() {
 }
 
 // Project Templates for PNG Civil Engineering
-export interface ProjectTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: 'residential' | 'commercial' | 'community' | 'industrial' | 'infrastructure';
-  icon: string;
-  defaultLayers: string[];
-  defaultSettings: {
-    units: 'metric' | 'imperial';
-    gridSpacing: number;
-    province?: string;
-  };
-}
-
-export const PROJECT_TEMPLATES: ProjectTemplate[] = [
+export const PROJECT_TEMPLATES = [
   {
     id: 'haus-residential',
     name: 'Residential House',
@@ -219,10 +193,10 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
   },
 ];
 
-export function getTemplatesByCategory(category: ProjectTemplate['category']): ProjectTemplate[] {
+export function getTemplatesByCategory(category) {
   return PROJECT_TEMPLATES.filter(t => t.category === category);
 }
 
-export function getTemplateById(id: string): ProjectTemplate | undefined {
+export function getTemplateById(id) {
   return PROJECT_TEMPLATES.find(t => t.id === id);
 }

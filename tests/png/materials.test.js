@@ -17,9 +17,7 @@ import {
   getTermiteResistantMaterials,
   getMarineGradeMaterials,
   estimateMaterialCost,
-  type Material,
-  type MaterialCategory,
-} from '../../src/png/materials';
+} from '../../src/png/materials.js';
 
 describe('Material Database', () => {
   describe('PNG_TIMBER', () => {
@@ -37,32 +35,32 @@ describe('Material Database', () => {
       const kwila = PNG_TIMBER.find(t => t.id === 'kwila');
 
       expect(kwila).toBeDefined();
-      expect(kwila!.durability.termiteResistance).toBe('high');
-      expect(kwila!.durability.lifespan).toBe(50);
-      expect(kwila!.properties.grade).toBe('Durability Class 1');
+      expect(kwila.durability.termiteResistance).toBe('high');
+      expect(kwila.durability.lifespan).toBe(50);
+      expect(kwila.properties.grade).toBe('Durability Class 1');
     });
 
     it('should mark bamboo as traditional material', () => {
       const bamboo = PNG_TIMBER.find(t => t.id === 'bamboo');
 
       expect(bamboo).toBeDefined();
-      expect(bamboo!.category).toBe('traditional');
-      expect(bamboo!.sustainability.renewable).toBe(true);
+      expect(bamboo.category).toBe('traditional');
+      expect(bamboo.sustainability.renewable).toBe(true);
     });
 
     it('should require treatment for lower durability timbers', () => {
       const calophyllum = PNG_TIMBER.find(t => t.id === 'calophyllum');
 
       expect(calophyllum).toBeDefined();
-      expect(calophyllum!.durability.treatmentRequired).toBe(true);
+      expect(calophyllum.durability.treatmentRequired).toBe(true);
     });
 
     it('should include local names for species', () => {
       const bamboo = PNG_TIMBER.find(t => t.id === 'bamboo');
       const kwila = PNG_TIMBER.find(t => t.id === 'kwila');
 
-      expect(bamboo!.localName).toBe('Mambu');
-      expect(kwila!.localName).toBe('Kwila');
+      expect(bamboo.localName).toBe('Mambu');
+      expect(kwila.localName).toBe('Kwila');
     });
   });
 
@@ -79,16 +77,16 @@ describe('Material Database', () => {
       const coral = PNG_CONCRETE_MATERIALS.find(m => m.id === 'coral-aggregate');
 
       expect(coral).toBeDefined();
-      expect(coral!.limitations).toContain('NOT suitable for reinforced concrete');
-      expect(coral!.durability.corrosionResistance).toBe('low');
+      expect(coral.limitations).toContain('NOT suitable for reinforced concrete');
+      expect(coral.durability.corrosionResistance).toBe('low');
     });
 
     it('should indicate cement is imported', () => {
       const cement = PNG_CONCRETE_MATERIALS.find(m => m.id === 'portland-cement');
 
       expect(cement).toBeDefined();
-      expect(cement!.sustainability.locallySourced).toBe(false);
-      expect(cement!.sustainability.carbonFootprint).toBe('high');
+      expect(cement.sustainability.locallySourced).toBe(false);
+      expect(cement.sustainability.carbonFootprint).toBe('high');
     });
   });
 
@@ -104,14 +102,14 @@ describe('Material Database', () => {
       const rebar = PNG_STEEL.find(m => m.id === 'reinforcing-bar');
 
       expect(rebar).toBeDefined();
-      expect(rebar!.recommendations.some(r => r.includes('50mm cover'))).toBe(true);
+      expect(rebar.recommendations.some(r => r.includes('50mm cover'))).toBe(true);
     });
 
     it('should recommend high zinc coating for roofing in PNG', () => {
       const roofing = PNG_STEEL.find(m => m.id === 'roofing-iron');
 
       expect(roofing).toBeDefined();
-      expect(roofing!.recommendations.some(r => r.includes('Z450'))).toBe(true);
+      expect(roofing.recommendations.some(r => r.includes('Z450'))).toBe(true);
     });
   });
 
@@ -127,15 +125,15 @@ describe('Material Database', () => {
       const brick = PNG_MASONRY.find(m => m.id === 'clay-brick');
 
       expect(brick).toBeDefined();
-      expect(brick!.availability).toBe('limited');
-      expect(brick!.availableProvinces.length).toBeLessThan(22);
+      expect(brick.availability).toBe('limited');
+      expect(brick.availableProvinces.length).toBeLessThan(22);
     });
 
     it('should require reinforcement for blocks in seismic zones', () => {
       const block = PNG_MASONRY.find(m => m.id === 'concrete-block');
 
       expect(block).toBeDefined();
-      expect(block!.recommendations.some(r => r.includes('reinforce'))).toBe(true);
+      expect(block.recommendations.some(r => r.includes('reinforce'))).toBe(true);
     });
   });
 
@@ -162,7 +160,7 @@ describe('Material Lookup Functions', () => {
       const kwila = getMaterialById('kwila');
 
       expect(kwila).toBeDefined();
-      expect(kwila!.name).toBe('Kwila (Merbau)');
+      expect(kwila.name).toBe('Kwila (Merbau)');
     });
 
     it('should return undefined for invalid ID', () => {
@@ -188,7 +186,7 @@ describe('Material Lookup Functions', () => {
     });
 
     it('should return empty array for unknown category', () => {
-      const result = getMaterialsByCategory('unknown' as MaterialCategory);
+      const result = getMaterialsByCategory('unknown');
 
       expect(result).toEqual([]);
     });
@@ -332,9 +330,9 @@ describe('Material Properties', () => {
     it('should include strength properties for structural materials', () => {
       const kwila = getMaterialById('kwila');
 
-      expect(kwila!.properties.compressiveStrength).toBeGreaterThan(0);
-      expect(kwila!.properties.tensileStrength).toBeGreaterThan(0);
-      expect(kwila!.properties.bendingStrength).toBeGreaterThan(0);
+      expect(kwila.properties.compressiveStrength).toBeGreaterThan(0);
+      expect(kwila.properties.tensileStrength).toBeGreaterThan(0);
+      expect(kwila.properties.bendingStrength).toBeGreaterThan(0);
     });
   });
 
@@ -348,8 +346,8 @@ describe('Material Properties', () => {
     it('should specify treatment requirements', () => {
       const taun = getMaterialById('taun');
 
-      expect(taun!.durability.treatmentRequired).toBe(true);
-      expect(taun!.durability.treatmentType).toBeDefined();
+      expect(taun.durability.treatmentRequired).toBe(true);
+      expect(taun.durability.treatmentType).toBeDefined();
     });
   });
 
@@ -364,8 +362,8 @@ describe('Material Properties', () => {
       const river = getMaterialById('river-aggregate');
       const cement = getMaterialById('portland-cement');
 
-      expect(river!.sustainability.locallySourced).toBe(true);
-      expect(cement!.sustainability.locallySourced).toBe(false);
+      expect(river.sustainability.locallySourced).toBe(true);
+      expect(cement.sustainability.locallySourced).toBe(false);
     });
   });
 });
@@ -376,8 +374,8 @@ describe('Material Cost Estimation', () => {
       const estimate = estimateMaterialCost('kwila', 10, 'National Capital District');
 
       expect(estimate).not.toBeNull();
-      expect(estimate!.totalCost).toBeGreaterThan(0);
-      expect(estimate!.unit).toBe('m³');
+      expect(estimate.totalCost).toBeGreaterThan(0);
+      expect(estimate.unit).toBe('m³');
     });
 
     it('should return null for unknown materials', () => {
@@ -390,28 +388,28 @@ describe('Material Cost Estimation', () => {
       const estimate = estimateMaterialCost('portland-cement', 100, 'Enga');
 
       expect(estimate).not.toBeNull();
-      expect(estimate!.transportCost).toBeGreaterThan(0);
+      expect(estimate.transportCost).toBeGreaterThan(0);
     });
 
     it('should have higher transport costs for remote provinces', () => {
       const ncdEstimate = estimateMaterialCost('portland-cement', 100, 'National Capital District');
       const westernEstimate = estimateMaterialCost('portland-cement', 100, 'Western');
 
-      expect(westernEstimate!.transportCost).toBeGreaterThan(ncdEstimate!.transportCost);
+      expect(westernEstimate.transportCost).toBeGreaterThan(ncdEstimate.transportCost);
     });
 
     it('should note limited availability', () => {
       const estimate = estimateMaterialCost('clay-brick', 1000, 'Morobe');
 
       expect(estimate).not.toBeNull();
-      expect(estimate!.notes).toContain('Limited availability');
+      expect(estimate.notes).toContain('Limited availability');
     });
 
     it('should calculate correct total cost', () => {
       const estimate = estimateMaterialCost('concrete-block', 100, 'Central');
 
       expect(estimate).not.toBeNull();
-      expect(estimate!.totalCost).toBe(estimate!.unitCost * estimate!.quantity);
+      expect(estimate.totalCost).toBe(estimate.unitCost * estimate.quantity);
     });
   });
 });
@@ -426,7 +424,6 @@ describe('Material Recommendations', () => {
 
     it('should have limitations where appropriate', () => {
       const coral = getMaterialById('coral-aggregate');
-      const unreinforced = getMaterialById('masonry-unreinforced');
 
       // Not all materials have this ID, but coral should have limitations
       if (coral) {
@@ -451,7 +448,7 @@ describe('Material Recommendations', () => {
     it('should mark bamboo as specialized due to jointing', () => {
       const bamboo = getMaterialById('bamboo');
 
-      expect(bamboo!.skillRequired).toBe('specialized');
+      expect(bamboo.skillRequired).toBe('specialized');
     });
   });
 });

@@ -4,30 +4,11 @@
  * Based on PNG Building Board requirements and AS/NZS 1170.4
  */
 
-import type { PNGProvince, PNGSeismicZone, Point2D } from '../core/types';
-
 // ============================================
-// Seismic Zone Definitions
-// ============================================
-
-export interface SeismicZoneData {
-  zone: PNGSeismicZone;
-  hazardFactor: number;       // Z factor (0.1-0.6)
-  description: string;
-  designSpectrum: DesignSpectrum;
-  faultProximity: 'near-fault' | 'far-fault';
-  liquidationRisk: 'low' | 'moderate' | 'high';
-}
-
-export interface DesignSpectrum {
-  T0: number;      // Period at start of plateau (seconds)
-  T1: number;      // Period at end of plateau (seconds)
-  Sa0: number;     // Spectral acceleration at T=0
-  Sa1: number;     // Spectral acceleration at plateau
-}
-
 // Province to seismic zone mapping
-const PROVINCE_SEISMIC_ZONES: Record<PNGProvince, PNGSeismicZone> = {
+// ============================================
+
+const PROVINCE_SEISMIC_ZONES = {
   // Very high seismic zone - near plate boundaries
   'Madang': 'zone-4',
   'East Sepik': 'zone-4',
@@ -59,14 +40,14 @@ const PROVINCE_SEISMIC_ZONES: Record<PNGProvince, PNGSeismicZone> = {
   'Western': 'zone-1',
 };
 
-const SEISMIC_ZONE_DATA: Record<PNGSeismicZone, SeismicZoneData> = {
+const SEISMIC_ZONE_DATA = {
   'zone-1': {
     zone: 'zone-1',
     hazardFactor: 0.15,
     description: 'Low seismic hazard - Western lowlands',
     designSpectrum: { T0: 0.1, T1: 0.5, Sa0: 0.15, Sa1: 0.375 },
     faultProximity: 'far-fault',
-    liquidationRisk: 'moderate', // Due to alluvial soils
+    liquidationRisk: 'moderate',
   },
   'zone-2': {
     zone: 'zone-2',
@@ -95,38 +76,10 @@ const SEISMIC_ZONE_DATA: Record<PNGSeismicZone, SeismicZoneData> = {
 };
 
 // ============================================
-// Seismic Analysis Functions
+// Soil Classification Data
 // ============================================
 
-export function getSeismicZone(province: PNGProvince): PNGSeismicZone {
-  return PROVINCE_SEISMIC_ZONES[province];
-}
-
-export function getSeismicZoneData(zone: PNGSeismicZone): SeismicZoneData {
-  return SEISMIC_ZONE_DATA[zone];
-}
-
-export function getSeismicDataForProvince(province: PNGProvince): SeismicZoneData {
-  const zone = getSeismicZone(province);
-  return getSeismicZoneData(zone);
-}
-
-// ============================================
-// Soil Classification
-// ============================================
-
-export type SoilClass = 'A' | 'B' | 'C' | 'D' | 'E';
-
-export interface SoilClassData {
-  class: SoilClass;
-  description: string;
-  siteFactor: number;
-  shearWaveVelocity: { min: number; max: number }; // m/s
-  amplificationFactor: number;
-  liquidationPotential: 'none' | 'low' | 'moderate' | 'high';
-}
-
-const SOIL_CLASS_DATA: Record<SoilClass, SoilClassData> = {
+const SOIL_CLASS_DATA = {
   'A': {
     class: 'A',
     description: 'Strong rock',
@@ -169,24 +122,11 @@ const SOIL_CLASS_DATA: Record<SoilClass, SoilClassData> = {
   },
 };
 
-export function getSoilClassData(soilClass: SoilClass): SoilClassData {
-  return SOIL_CLASS_DATA[soilClass];
-}
-
 // ============================================
-// Building Importance Categories
+// Importance Categories
 // ============================================
 
-export type ImportanceCategory = 1 | 2 | 3 | 4;
-
-export interface ImportanceCategoryData {
-  category: ImportanceCategory;
-  description: string;
-  importanceFactor: number;
-  examples: string[];
-}
-
-const IMPORTANCE_CATEGORIES: Record<ImportanceCategory, ImportanceCategoryData> = {
+const IMPORTANCE_CATEGORIES = {
   1: {
     category: 1,
     description: 'Minor structures',
@@ -213,36 +153,11 @@ const IMPORTANCE_CATEGORIES: Record<ImportanceCategory, ImportanceCategoryData> 
   },
 };
 
-export function getImportanceFactor(category: ImportanceCategory): number {
-  return IMPORTANCE_CATEGORIES[category].importanceFactor;
-}
-
 // ============================================
-// Structural System Types
+// Structural Systems
 // ============================================
 
-export type StructuralSystem =
-  | 'timber-frame'
-  | 'light-steel-frame'
-  | 'masonry-unreinforced'
-  | 'masonry-reinforced'
-  | 'concrete-frame'
-  | 'concrete-shear-wall'
-  | 'steel-frame'
-  | 'traditional-haus-tambaran';
-
-export interface StructuralSystemData {
-  system: StructuralSystem;
-  description: string;
-  ductilityFactor: number;       // μ - ductility
-  structuralPerformanceFactor: number;  // Sp
-  overstrengthFactor: number;    // Ωo
-  heightLimit: number;           // meters (for PNG zones)
-  suitability: PNGSeismicZone[];
-  recommendations: string[];
-}
-
-const STRUCTURAL_SYSTEMS: Record<StructuralSystem, StructuralSystemData> = {
+const STRUCTURAL_SYSTEMS = {
   'timber-frame': {
     system: 'timber-frame',
     description: 'Light timber frame construction',
@@ -363,95 +278,81 @@ const STRUCTURAL_SYSTEMS: Record<StructuralSystem, StructuralSystemData> = {
   },
 };
 
-export function getStructuralSystemData(system: StructuralSystem): StructuralSystemData {
+// ============================================
+// Seismic Analysis Functions
+// ============================================
+
+export function getSeismicZone(province) {
+  return PROVINCE_SEISMIC_ZONES[province];
+}
+
+export function getSeismicZoneData(zone) {
+  return SEISMIC_ZONE_DATA[zone];
+}
+
+export function getSeismicDataForProvince(province) {
+  const zone = getSeismicZone(province);
+  return getSeismicZoneData(zone);
+}
+
+export function getSoilClassData(soilClass) {
+  return SOIL_CLASS_DATA[soilClass];
+}
+
+export function getImportanceFactor(category) {
+  return IMPORTANCE_CATEGORIES[category].importanceFactor;
+}
+
+export function getStructuralSystemData(system) {
   return STRUCTURAL_SYSTEMS[system];
 }
 
-export function getRecommendedSystems(zone: PNGSeismicZone): StructuralSystem[] {
+export function getRecommendedSystems(zone) {
   return Object.entries(STRUCTURAL_SYSTEMS)
     .filter(([_, data]) => data.suitability.includes(zone))
-    .map(([system, _]) => system as StructuralSystem);
+    .map(([system, _]) => system);
 }
 
 // ============================================
 // Seismic Design Calculations
 // ============================================
 
-export interface SeismicDesignInput {
-  province: PNGProvince;
-  soilClass: SoilClass;
-  importanceCategory: ImportanceCategory;
-  structuralSystem: StructuralSystem;
-  buildingHeight: number;      // meters
-  buildingPeriod?: number;     // seconds (optional, will be estimated)
-  buildingWeight: number;      // kN
-  numberOfStoreys: number;
-}
-
-export interface SeismicDesignResult {
-  seismicZone: PNGSeismicZone;
-  hazardFactor: number;
-  siteFactor: number;
-  importanceFactor: number;
-  ductilityFactor: number;
-  structuralPerformanceFactor: number;
-  buildingPeriod: number;
-  spectralAcceleration: number;
-  designBaseShear: number;     // kN
-  designBaseShearCoefficient: number;
-  lateralForceDistribution: { storey: number; force: number }[];
-  recommendations: string[];
-  warnings: string[];
-}
-
-export function calculateSeismicDesign(input: SeismicDesignInput): SeismicDesignResult {
+export function calculateSeismicDesign(input) {
   const zoneData = getSeismicDataForProvince(input.province);
   const soilData = getSoilClassData(input.soilClass);
   const systemData = getStructuralSystemData(input.structuralSystem);
 
-  // Calculate building period if not provided
   const period = input.buildingPeriod ?? estimateBuildingPeriod(input);
-
-  // Get spectral acceleration
   const Sa = calculateSpectralAcceleration(zoneData, period, soilData.siteFactor);
 
-  // Calculate design base shear coefficient
-  // Cd = Sa * I / (μ * Sp)
   const importanceFactor = getImportanceFactor(input.importanceCategory);
   const Cd = (Sa * importanceFactor) / (systemData.ductilityFactor * systemData.structuralPerformanceFactor);
 
-  // Design base shear
   const V = Cd * input.buildingWeight;
 
-  // Lateral force distribution
   const distribution = calculateLateralForceDistribution(
     V,
     input.numberOfStoreys,
     input.buildingHeight
   );
 
-  // Generate recommendations and warnings
-  const recommendations: string[] = [...systemData.recommendations];
-  const warnings: string[] = [];
+  const recommendations = [...systemData.recommendations];
+  const warnings = [];
 
-  // Check height limits
   if (input.buildingHeight > systemData.heightLimit) {
     warnings.push(`Building height ${input.buildingHeight}m exceeds recommended limit of ${systemData.heightLimit}m for ${input.structuralSystem}`);
   }
 
-  // Check system suitability
   if (!systemData.suitability.includes(zoneData.zone)) {
     warnings.push(`Structural system ${input.structuralSystem} is NOT recommended for ${zoneData.zone}`);
   }
 
-  // Liquefaction warning
   if (soilData.liquidationPotential === 'high' || zoneData.liquidationRisk === 'high') {
     warnings.push('High liquefaction risk - consider ground improvement or deep foundations');
     recommendations.push('Conduct detailed geotechnical investigation');
     recommendations.push('Consider pile foundations to competent stratum');
   }
 
-  // Zone-specific recommendations
   if (zoneData.zone === 'zone-4') {
     recommendations.push('Engage structural engineer experienced in high seismic design');
     recommendations.push('Consider seismic isolation for essential facilities');
@@ -474,10 +375,8 @@ export function calculateSeismicDesign(input: SeismicDesignInput): SeismicDesign
   };
 }
 
-function estimateBuildingPeriod(input: SeismicDesignInput): number {
-  // Approximate period: T = Ct * h^x
-  // Where Ct and x depend on structural system
-  const coefficients: Record<StructuralSystem, { Ct: number; x: number }> = {
+function estimateBuildingPeriod(input) {
+  const coefficients = {
     'timber-frame': { Ct: 0.05, x: 0.75 },
     'light-steel-frame': { Ct: 0.05, x: 0.75 },
     'masonry-unreinforced': { Ct: 0.05, x: 0.75 },
@@ -492,48 +391,31 @@ function estimateBuildingPeriod(input: SeismicDesignInput): number {
   return Ct * Math.pow(input.buildingHeight, x);
 }
 
-function calculateSpectralAcceleration(
-  zoneData: SeismicZoneData,
-  period: number,
-  siteFactor: number
-): number {
+function calculateSpectralAcceleration(zoneData, period, siteFactor) {
   const { T0, T1, Sa0, Sa1 } = zoneData.designSpectrum;
 
-  let Sa: number;
+  let Sa;
   if (period < T0) {
-    // Linear interpolation from Sa0 at T=0 to Sa1 at T=T0
     Sa = Sa0 + (Sa1 - Sa0) * (period / T0);
   } else if (period <= T1) {
-    // Plateau region
     Sa = Sa1;
   } else {
-    // Descending branch: Sa = Sa1 * (T1/T)
     Sa = Sa1 * (T1 / period);
   }
 
   return Sa * siteFactor;
 }
 
-function calculateLateralForceDistribution(
-  baseShear: number,
-  storeys: number,
-  totalHeight: number
-): { storey: number; force: number }[] {
-  // Distribute force using inverted triangular distribution
-  // Fi = V * (wi * hi) / Σ(wi * hi)
-  // Assuming equal floor weights
-
-  const distribution: { storey: number; force: number }[] = [];
+function calculateLateralForceDistribution(baseShear, storeys, totalHeight) {
+  const distribution = [];
   let sumWiHi = 0;
 
   const storeyHeight = totalHeight / storeys;
 
-  // Calculate Σ(wi * hi)
   for (let i = 1; i <= storeys; i++) {
     sumWiHi += i * storeyHeight;
   }
 
-  // Calculate force at each storey
   for (let i = 1; i <= storeys; i++) {
     const hi = i * storeyHeight;
     const force = (baseShear * hi) / sumWiHi;
@@ -547,22 +429,9 @@ function calculateLateralForceDistribution(
 // Foundation Recommendations
 // ============================================
 
-export interface FoundationRecommendation {
-  type: 'pad-footing' | 'strip-footing' | 'raft' | 'piles' | 'traditional-post';
-  description: string;
-  suitability: string;
-  considerations: string[];
-}
+export function getFoundationRecommendations(zone, soilClass, buildingWeight, numberOfStoreys) {
+  const recommendations = [];
 
-export function getFoundationRecommendations(
-  zone: PNGSeismicZone,
-  soilClass: SoilClass,
-  buildingWeight: number,
-  numberOfStoreys: number
-): FoundationRecommendation[] {
-  const recommendations: FoundationRecommendation[] = [];
-
-  // Traditional post foundation - suitable for lightweight
   if (numberOfStoreys <= 2 && buildingWeight < 500) {
     recommendations.push({
       type: 'traditional-post',
@@ -577,7 +446,6 @@ export function getFoundationRecommendations(
     });
   }
 
-  // Pad footings
   if (soilClass !== 'E' && numberOfStoreys <= 3) {
     recommendations.push({
       type: 'pad-footing',
@@ -591,7 +459,6 @@ export function getFoundationRecommendations(
     });
   }
 
-  // Strip footings
   if (soilClass !== 'E') {
     recommendations.push({
       type: 'strip-footing',
@@ -605,7 +472,6 @@ export function getFoundationRecommendations(
     });
   }
 
-  // Raft foundation
   if (soilClass === 'D' || soilClass === 'E' || numberOfStoreys > 2) {
     recommendations.push({
       type: 'raft',
@@ -620,7 +486,6 @@ export function getFoundationRecommendations(
     });
   }
 
-  // Pile foundation
   if (soilClass === 'E' || zone === 'zone-4' || buildingWeight > 2000) {
     recommendations.push({
       type: 'piles',
@@ -642,16 +507,7 @@ export function getFoundationRecommendations(
 // Seismic Report Generation
 // ============================================
 
-export interface SeismicReport {
-  location: PNGProvince;
-  seismicData: SeismicZoneData;
-  designResults: SeismicDesignResult;
-  foundationRecommendations: FoundationRecommendation[];
-  detailingRequirements: string[];
-  referenceStandards: string[];
-}
-
-export function generateSeismicReport(input: SeismicDesignInput): SeismicReport {
+export function generateSeismicReport(input) {
   const seismicData = getSeismicDataForProvince(input.province);
   const designResults = calculateSeismicDesign(input);
   const foundationRecommendations = getFoundationRecommendations(
@@ -661,9 +517,8 @@ export function generateSeismicReport(input: SeismicDesignInput): SeismicReport 
     input.numberOfStoreys
   );
 
-  const detailingRequirements: string[] = [];
+  const detailingRequirements = [];
 
-  // Zone-specific detailing
   if (seismicData.zone === 'zone-3' || seismicData.zone === 'zone-4') {
     detailingRequirements.push('Ductile detailing required for all structural elements');
     detailingRequirements.push('Capacity design principles must be applied');
@@ -677,7 +532,6 @@ export function generateSeismicReport(input: SeismicDesignInput): SeismicReport 
     detailingRequirements.push('Boundary elements in shear walls');
   }
 
-  // General requirements
   detailingRequirements.push('All structural connections must be designed for seismic forces');
   detailingRequirements.push('Non-structural elements must be properly braced');
   detailingRequirements.push('Services must have flexible connections');

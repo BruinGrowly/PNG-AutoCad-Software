@@ -4,93 +4,18 @@
  */
 
 // ============================================
-// Material Type Definitions
-// ============================================
-
-export type MaterialCategory =
-  | 'timber'
-  | 'concrete'
-  | 'steel'
-  | 'masonry'
-  | 'roofing'
-  | 'aggregate'
-  | 'soil'
-  | 'traditional'
-  | 'imported';
-
-export type AvailabilityLevel =
-  | 'abundant'      // Locally available, low cost
-  | 'moderate'      // Available but may need transport
-  | 'limited'       // Available in major centers only
-  | 'import-only';  // Must be imported
-
-export interface Material {
-  id: string;
-  name: string;
-  localName?: string;
-  category: MaterialCategory;
-  description: string;
-  availability: AvailabilityLevel;
-  availableProvinces: string[];  // 'all' or specific provinces
-
-  properties: MaterialProperties;
-  durability: DurabilityProperties;
-  sustainability: SustainabilityProperties;
-
-  costIndicator: 1 | 2 | 3 | 4 | 5;  // 1=cheapest, 5=most expensive
-  skillRequired: 'basic' | 'moderate' | 'specialized';
-
-  applications: string[];
-  limitations: string[];
-  recommendations: string[];
-}
-
-export interface MaterialProperties {
-  density?: number;           // kg/m³
-  compressiveStrength?: number;  // MPa
-  tensileStrength?: number;   // MPa
-  bendingStrength?: number;   // MPa
-  elasticModulus?: number;    // GPa
-  thermalConductivity?: number; // W/m·K
-  moistureContent?: number;   // %
-  grainType?: string;         // For timber
-  grade?: string;             // Standard grade designation
-}
-
-export interface DurabilityProperties {
-  lifespan: number;           // years (expected)
-  termiteResistance: 'none' | 'low' | 'moderate' | 'high' | 'immune';
-  rotResistance: 'none' | 'low' | 'moderate' | 'high';
-  corrosionResistance: 'none' | 'low' | 'moderate' | 'high';
-  weatherResistance: 'poor' | 'fair' | 'good' | 'excellent';
-  maintenanceFrequency: 'annual' | 'biannual' | '5-year' | '10-year' | 'minimal';
-  treatmentRequired: boolean;
-  treatmentType?: string;
-}
-
-export interface SustainabilityProperties {
-  renewable: boolean;
-  locallySourced: boolean;
-  embodiedEnergy: 'low' | 'medium' | 'high';
-  recyclable: boolean;
-  carbonFootprint: 'low' | 'medium' | 'high';
-  environmentalImpact: string;
-}
-
-// ============================================
 // PNG Timber Species Database
 // ============================================
 
-export const PNG_TIMBER: Material[] = [
+export const PNG_TIMBER = [
   {
     id: 'kwila',
     name: 'Kwila (Merbau)',
     localName: 'Kwila',
     category: 'timber',
-    description: 'Premium hardwood, highly durable, natural termite resistance. PNG\'s most valued timber for construction.',
+    description: "Premium hardwood, highly durable, natural termite resistance. PNG's most valued timber for construction.",
     availability: 'moderate',
     availableProvinces: ['all'],
-
     properties: {
       density: 830,
       compressiveStrength: 70,
@@ -117,10 +42,8 @@ export const PNG_TIMBER: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Sustainable if from certified sources. Slow growing - ensure FSC certification.',
     },
-
     costIndicator: 4,
     skillRequired: 'moderate',
-
     applications: [
       'Structural framing',
       'Flooring',
@@ -140,7 +63,6 @@ export const PNG_TIMBER: Material[] = [
       'Allow for tannin runoff during construction',
     ],
   },
-
   {
     id: 'rosewood-png',
     name: 'PNG Rosewood',
@@ -149,7 +71,6 @@ export const PNG_TIMBER: Material[] = [
     description: 'High-quality hardwood with attractive grain, good durability.',
     availability: 'moderate',
     availableProvinces: ['all'],
-
     properties: {
       density: 750,
       compressiveStrength: 55,
@@ -177,10 +98,8 @@ export const PNG_TIMBER: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Generally sustainable, check harvesting permits',
     },
-
     costIndicator: 3,
     skillRequired: 'moderate',
-
     applications: [
       'Internal framing',
       'Flooring',
@@ -197,7 +116,6 @@ export const PNG_TIMBER: Material[] = [
       'Apply protective coating for external use',
     ],
   },
-
   {
     id: 'taun',
     name: 'Taun',
@@ -206,7 +124,6 @@ export const PNG_TIMBER: Material[] = [
     description: 'Durable hardwood commonly used in PNG construction. Good all-round timber.',
     availability: 'abundant',
     availableProvinces: ['all'],
-
     properties: {
       density: 720,
       compressiveStrength: 50,
@@ -234,10 +151,8 @@ export const PNG_TIMBER: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Sustainable, commonly available',
     },
-
     costIndicator: 2,
     skillRequired: 'basic',
-
     applications: [
       'General construction',
       'House framing',
@@ -254,7 +169,6 @@ export const PNG_TIMBER: Material[] = [
       'Protect end grain',
     ],
   },
-
   {
     id: 'calophyllum',
     name: 'Calophyllum',
@@ -263,7 +177,6 @@ export const PNG_TIMBER: Material[] = [
     description: 'Versatile medium-density hardwood, good workability.',
     availability: 'abundant',
     availableProvinces: ['all'],
-
     properties: {
       density: 580,
       compressiveStrength: 40,
@@ -291,10 +204,8 @@ export const PNG_TIMBER: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Abundant, sustainable harvesting possible',
     },
-
     costIndicator: 1,
     skillRequired: 'basic',
-
     applications: [
       'Internal construction',
       'Formwork',
@@ -311,7 +222,6 @@ export const PNG_TIMBER: Material[] = [
       'Regular maintenance required',
     ],
   },
-
   {
     id: 'bamboo',
     name: 'Bamboo',
@@ -320,7 +230,6 @@ export const PNG_TIMBER: Material[] = [
     description: 'Fast-growing, sustainable, traditional building material. Excellent strength-to-weight ratio.',
     availability: 'abundant',
     availableProvinces: ['all'],
-
     properties: {
       density: 600,
       compressiveStrength: 45,
@@ -347,10 +256,8 @@ export const PNG_TIMBER: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Highly sustainable - rapid growth, no replanting needed',
     },
-
     costIndicator: 1,
     skillRequired: 'specialized',
-
     applications: [
       'Traditional houses',
       'Scaffolding',
@@ -377,7 +284,7 @@ export const PNG_TIMBER: Material[] = [
 // Concrete and Aggregates
 // ============================================
 
-export const PNG_CONCRETE_MATERIALS: Material[] = [
+export const PNG_CONCRETE_MATERIALS = [
   {
     id: 'portland-cement',
     name: 'Portland Cement',
@@ -385,10 +292,9 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
     description: 'Standard Portland cement, mostly imported. Main binding material for concrete.',
     availability: 'moderate',
     availableProvinces: ['all'],
-
     properties: {
       density: 1440,
-      compressiveStrength: 42.5,  // MPa at 28 days (Grade 42.5)
+      compressiveStrength: 42.5,
       grade: 'Type GP',
     },
     durability: {
@@ -408,10 +314,8 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
       carbonFootprint: 'high',
       environmentalImpact: 'High CO2 in production. Consider supplementary materials.',
     },
-
     costIndicator: 3,
     skillRequired: 'moderate',
-
     applications: [
       'Structural concrete',
       'Foundations',
@@ -429,7 +333,6 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
       'Consider blended cements for durability',
     ],
   },
-
   {
     id: 'river-aggregate',
     name: 'River Aggregate',
@@ -437,7 +340,6 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
     description: 'Locally sourced river gravel and sand. Main aggregate source in PNG.',
     availability: 'abundant',
     availableProvinces: ['all'],
-
     properties: {
       density: 2400,
       grade: 'Variable - test required',
@@ -459,10 +361,8 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Extraction can affect river ecosystems. Ensure permits.',
     },
-
     costIndicator: 1,
     skillRequired: 'basic',
-
     applications: [
       'Concrete production',
       'Road base',
@@ -477,10 +377,9 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
     recommendations: [
       'Always test for silt content',
       'Wash if silt content > 3%',
-      'Test for reactive aggregite (alkali-silica reaction)',
+      'Test for reactive aggregate (alkali-silica reaction)',
     ],
   },
-
   {
     id: 'coral-aggregate',
     name: 'Coral Aggregate',
@@ -489,7 +388,6 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
     description: 'Dead coral used in coastal areas where river aggregate unavailable. Traditional in island communities.',
     availability: 'moderate',
     availableProvinces: ['Manus', 'Milne Bay', 'East New Britain', 'West New Britain', 'New Ireland', 'Autonomous Region of Bougainville'],
-
     properties: {
       density: 1800,
       compressiveStrength: 15,
@@ -499,7 +397,7 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
       lifespan: 30,
       termiteResistance: 'immune',
       rotResistance: 'high',
-      corrosionResistance: 'low',  // Can accelerate steel corrosion
+      corrosionResistance: 'low',
       weatherResistance: 'fair',
       maintenanceFrequency: '5-year',
       treatmentRequired: false,
@@ -512,10 +410,8 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
       carbonFootprint: 'low',
       environmentalImpact: 'Only use dead coral. Live coral harvesting prohibited.',
     },
-
     costIndicator: 1,
     skillRequired: 'basic',
-
     applications: [
       'Non-structural concrete',
       'Road base',
@@ -541,7 +437,7 @@ export const PNG_CONCRETE_MATERIALS: Material[] = [
 // Steel Products
 // ============================================
 
-export const PNG_STEEL: Material[] = [
+export const PNG_STEEL = [
   {
     id: 'reinforcing-bar',
     name: 'Reinforcing Steel Bar (Rebar)',
@@ -549,10 +445,9 @@ export const PNG_STEEL: Material[] = [
     description: 'Deformed steel bar for concrete reinforcement. Imported from Australia/Asia.',
     availability: 'moderate',
     availableProvinces: ['all'],
-
     properties: {
       density: 7850,
-      tensileStrength: 500,  // N500 grade
+      tensileStrength: 500,
       elasticModulus: 200,
       grade: 'N500',
     },
@@ -574,10 +469,8 @@ export const PNG_STEEL: Material[] = [
       carbonFootprint: 'high',
       environmentalImpact: 'High production energy but highly recyclable',
     },
-
     costIndicator: 3,
     skillRequired: 'specialized',
-
     applications: [
       'Concrete reinforcement',
       'Foundations',
@@ -595,7 +488,6 @@ export const PNG_STEEL: Material[] = [
       'Use epoxy-coated rebar in marine environments',
     ],
   },
-
   {
     id: 'roofing-iron',
     name: 'Corrugated Roofing Iron',
@@ -604,13 +496,12 @@ export const PNG_STEEL: Material[] = [
     description: 'Galvanized corrugated steel roofing. Most common roofing material in PNG.',
     availability: 'abundant',
     availableProvinces: ['all'],
-
     properties: {
       density: 7850,
       grade: 'G550 Z450 (recommended for PNG)',
     },
     durability: {
-      lifespan: 25,  // Higher zinc coating recommended
+      lifespan: 25,
       termiteResistance: 'immune',
       rotResistance: 'high',
       corrosionResistance: 'moderate',
@@ -626,10 +517,8 @@ export const PNG_STEEL: Material[] = [
       carbonFootprint: 'high',
       environmentalImpact: 'Long-lasting if maintained, recyclable',
     },
-
     costIndicator: 2,
     skillRequired: 'basic',
-
     applications: [
       'Roofing',
       'Wall cladding',
@@ -655,7 +544,7 @@ export const PNG_STEEL: Material[] = [
 // Masonry Materials
 // ============================================
 
-export const PNG_MASONRY: Material[] = [
+export const PNG_MASONRY = [
   {
     id: 'concrete-block',
     name: 'Concrete Block',
@@ -663,10 +552,9 @@ export const PNG_MASONRY: Material[] = [
     description: 'Hollow concrete masonry units. Locally manufactured in major centers.',
     availability: 'moderate',
     availableProvinces: ['all'],
-
     properties: {
       density: 2000,
-      compressiveStrength: 7,  // MPa minimum
+      compressiveStrength: 7,
       thermalConductivity: 1.0,
       grade: '7.0 MPa minimum',
     },
@@ -687,10 +575,8 @@ export const PNG_MASONRY: Material[] = [
       carbonFootprint: 'medium',
       environmentalImpact: 'Moderate impact, long lifespan offsets production',
     },
-
     costIndicator: 2,
     skillRequired: 'moderate',
-
     applications: [
       'Wall construction',
       'Retaining walls',
@@ -709,7 +595,6 @@ export const PNG_MASONRY: Material[] = [
       'Core-fill with concrete for structural walls',
     ],
   },
-
   {
     id: 'clay-brick',
     name: 'Clay Brick',
@@ -717,7 +602,6 @@ export const PNG_MASONRY: Material[] = [
     description: 'Fired clay bricks. Limited local production, mostly imported.',
     availability: 'limited',
     availableProvinces: ['National Capital District', 'Morobe', 'East New Britain'],
-
     properties: {
       density: 1800,
       compressiveStrength: 15,
@@ -741,10 +625,8 @@ export const PNG_MASONRY: Material[] = [
       carbonFootprint: 'high',
       environmentalImpact: 'High firing energy, but very long lifespan',
     },
-
     costIndicator: 4,
     skillRequired: 'specialized',
-
     applications: [
       'Quality construction',
       'Feature walls',
@@ -763,56 +645,60 @@ export const PNG_MASONRY: Material[] = [
 ];
 
 // ============================================
-// Material Database Functions
+// Combined Materials Database
 // ============================================
 
-export const ALL_MATERIALS: Material[] = [
+export const ALL_MATERIALS = [
   ...PNG_TIMBER,
   ...PNG_CONCRETE_MATERIALS,
   ...PNG_STEEL,
   ...PNG_MASONRY,
 ];
 
-export function getMaterialById(id: string): Material | undefined {
+// ============================================
+// Material Database Functions
+// ============================================
+
+export function getMaterialById(id) {
   return ALL_MATERIALS.find(m => m.id === id);
 }
 
-export function getMaterialsByCategory(category: MaterialCategory): Material[] {
+export function getMaterialsByCategory(category) {
   return ALL_MATERIALS.filter(m => m.category === category);
 }
 
-export function getMaterialsByAvailability(province: string): Material[] {
+export function getMaterialsByAvailability(province) {
   return ALL_MATERIALS.filter(m =>
     m.availableProvinces.includes('all') ||
     m.availableProvinces.includes(province)
   );
 }
 
-export function searchMaterials(query: string): Material[] {
+export function searchMaterials(query) {
   const lowerQuery = query.toLowerCase();
   return ALL_MATERIALS.filter(m =>
     m.name.toLowerCase().includes(lowerQuery) ||
     m.description.toLowerCase().includes(lowerQuery) ||
-    m.localName?.toLowerCase().includes(lowerQuery) ||
+    (m.localName && m.localName.toLowerCase().includes(lowerQuery)) ||
     m.applications.some(a => a.toLowerCase().includes(lowerQuery))
   );
 }
 
-export function getMaterialsForApplication(application: string): Material[] {
+export function getMaterialsForApplication(application) {
   const lowerApp = application.toLowerCase();
   return ALL_MATERIALS.filter(m =>
     m.applications.some(a => a.toLowerCase().includes(lowerApp))
   );
 }
 
-export function getTermiteResistantMaterials(): Material[] {
+export function getTermiteResistantMaterials() {
   return ALL_MATERIALS.filter(m =>
     m.durability.termiteResistance === 'high' ||
     m.durability.termiteResistance === 'immune'
   );
 }
 
-export function getMarineGradeMaterials(): Material[] {
+export function getMarineGradeMaterials() {
   return ALL_MATERIALS.filter(m =>
     m.durability.corrosionResistance === 'high' ||
     m.durability.weatherResistance === 'excellent'
@@ -823,18 +709,7 @@ export function getMarineGradeMaterials(): Material[] {
 // Material Cost Estimation
 // ============================================
 
-export interface MaterialCostEstimate {
-  materialId: string;
-  quantity: number;
-  unit: string;
-  unitCost: number;  // PGK
-  totalCost: number;
-  transportCost: number;
-  notes: string;
-}
-
-// Indicative costs in PGK (2024 estimates)
-const MATERIAL_UNIT_COSTS: Record<string, { cost: number; unit: string }> = {
+const MATERIAL_UNIT_COSTS = {
   'kwila': { cost: 3500, unit: 'm³' },
   'rosewood-png': { cost: 2500, unit: 'm³' },
   'taun': { cost: 1800, unit: 'm³' },
@@ -849,18 +724,13 @@ const MATERIAL_UNIT_COSTS: Record<string, { cost: number; unit: string }> = {
   'clay-brick': { cost: 2.5, unit: 'brick' },
 };
 
-export function estimateMaterialCost(
-  materialId: string,
-  quantity: number,
-  province: string
-): MaterialCostEstimate | null {
+export function estimateMaterialCost(materialId, quantity, province) {
   const costData = MATERIAL_UNIT_COSTS[materialId];
   if (!costData) return null;
 
   const material = getMaterialById(materialId);
   if (!material) return null;
 
-  // Transport cost factor based on province remoteness
   const transportFactor = getTransportFactor(province);
   const transportCost = costData.cost * quantity * transportFactor * 0.1;
 
@@ -877,8 +747,8 @@ export function estimateMaterialCost(
   };
 }
 
-function getTransportFactor(province: string): number {
-  const remotenessFactors: Record<string, number> = {
+function getTransportFactor(province) {
+  const remotenessFactors = {
     'National Capital District': 1.0,
     'Central': 1.1,
     'Morobe': 1.2,
