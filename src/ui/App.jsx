@@ -8,16 +8,19 @@ import { Toolbar } from './components/Toolbar.jsx';
 import { LayerPanel } from './components/LayerPanel.jsx';
 import { PropertiesPanel } from './components/PropertiesPanel.jsx';
 import { PNGAnalysisPanel } from './components/PNGAnalysisPanel.jsx';
+import { BuildingParametersPanel } from './components/BuildingParametersPanel.jsx';
 import { ProjectDialog } from './components/ProjectDialog.jsx';
 import { MenuBar } from './components/MenuBar.jsx';
 import { StatusBar } from './components/StatusBar.jsx';
 import { useCADStore } from './store/cadStore.js';
 import { useOfflineStorage } from './hooks/useOfflineStorage.js';
+import { exportToPDF } from '../core/pdfExport.js';
 import './styles/App.css';
 
 export function App() {
   const [showProjectDialog, setShowProjectDialog] = useState(true);
   const [showPNGPanel, setShowPNGPanel] = useState(false);
+  const [showBuildingPanel, setShowBuildingPanel] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const {
@@ -143,6 +146,41 @@ export function App() {
     setShowPNGPanel(prev => !prev);
   }, []);
 
+  const toggleBuildingPanel = useCallback(() => {
+    setShowBuildingPanel(prev => !prev);
+  }, []);
+
+  const handleExportPDF = useCallback(async () => {
+    if (!project) return;
+
+    const entities = project.entities || [];
+    const viewport = {
+      minX: -500,
+      minY: -350,
+      maxX: 500,
+      maxY: 350,
+    };
+
+    await exportToPDF({
+      entities,
+      viewport,
+      paperSize: 'A3',
+      orientation: 'landscape',
+      titleBlock: {
+        projectTitle: project.name || 'Untitled Project',
+        drawingTitle: 'DRAWING',
+        scale: '1:100',
+      },
+      filename: `${project.name || 'drawing'}.pdf`,
+    });
+  }, [project]);
+
+  const handleInsertBuildingEntities = useCallback((entities) => {
+    if (!entities || entities.length === 0) return;
+    const { addEntities } = useCADStore.getState();
+    addEntities(entities);
+  }, []);
+
   if (showProjectDialog) {
     return (
       <ProjectDialog
@@ -160,6 +198,8 @@ export function App() {
         onNewProject={() => setShowProjectDialog(true)}
         onSave={() => project && saveProject(project)}
         onTogglePNGPanel={togglePNGPanel}
+        onToggleBuildingPanel={toggleBuildingPanel}
+        onExportPDF={handleExportPDF}
         isOffline={isOffline}
       />
 
@@ -194,6 +234,13 @@ export function App() {
               <PNGAnalysisPanel
                 project={project}
                 onClose={() => setShowPNGPanel(false)}
+              />
+            )}
+
+            {showBuildingPanel && (
+              <BuildingParametersPanel
+                onClose={() => setShowBuildingPanel(false)}
+                onInsertToDrawing={handleInsertBuildingEntities}
               />
             )}
           </div>

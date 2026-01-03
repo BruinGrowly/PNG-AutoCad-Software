@@ -12,6 +12,8 @@ export function MenuBar({
   onNewProject,
   onSave,
   onTogglePNGPanel,
+  onToggleBuildingPanel,
+  onExportPDF,
   isOffline,
 }) {
   const [activeMenu, setActiveMenu] = useState(null);
@@ -86,8 +88,8 @@ export function MenuBar({
                 <button onClick={() => handleMenuItemClick(() => { })}>
                   Export DXF
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
-                  Export PDF
+                <button onClick={() => handleMenuItemClick(onExportPDF || (() => { }))}>
+                  📄 Export PDF
                 </button>
                 <button onClick={() => handleMenuItemClick(() => { })}>
                   Print...
@@ -253,6 +255,9 @@ export function MenuBar({
                   Material Database
                 </button>
                 <div className="menu-divider" />
+                <button onClick={() => handleMenuItemClick(onToggleBuildingPanel || (() => { }))}>
+                  🏗️ Building Parameters
+                </button>
                 <button onClick={() => handleMenuItemClick(() => { })}>
                   Structural Design
                 </button>

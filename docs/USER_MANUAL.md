@@ -322,6 +322,79 @@ Access via **PNG Analysis > Materials**.
 - Application recommendations
 - Treatment requirements
 
+### Building Parameters Panel
+
+Access via **PNG Analysis > 🏗️ Building Parameters**.
+
+This powerful tool provides all design parameters needed for a building at any PNG location in one click.
+
+#### Input Parameters
+
+| Parameter | Description | Options |
+|-----------|-------------|---------|
+| Province | Project location | All 22 PNG provinces |
+| Building Class | Structure importance | 1-4 |
+| Soil Class | Site soil conditions | Ae-Ee |
+| Site Elevation | Height above sea level | Meters |
+
+#### Building Class Guide
+
+| Class | Description | Examples |
+|-------|-------------|----------|
+| 1 | Minor structures | Storage sheds, carports, fences |
+| 2 | Normal | Houses, offices, retail |
+| 3 | Important | Schools, churches, health centers |
+| 4 | Essential | Hospitals, fire stations, police |
+
+#### Output Parameters
+
+The panel displays color-coded cards for each parameter category:
+
+**🌍 Seismic**
+- Z Factor (hazard level)
+- kp Coefficient (design seismic force)
+- Near-fault classification
+- Classification (Low to Severe)
+
+**💨 Wind**
+- Wind region (A, B, or C)
+- Basic wind speed (m/s)
+- Cyclonic zone status
+
+**🌧️ Climate**
+- Climate zone
+- Annual rainfall (mm)
+- Maximum daily rainfall (mm)
+
+**🌊 Flood**
+- Risk assessment
+- Design recommendations
+- Minimum floor level guidance
+
+**🔧 Corrosion**
+- Corrosion zone (C3-C5)
+- Material protection requirements
+- Coating specifications
+
+#### Actions
+
+| Button | Function |
+|--------|----------|
+| 📋 Copy Text | Copy all parameters as text for reports |
+| ➕ Insert to Drawing | Add parameter text entities to your drawing |
+
+#### Example Workflow
+
+1. Open Building Parameters: **PNG Analysis > 🏗️ Building Parameters**
+2. Select **Morobe** province
+3. Select Building Class **3** (for a school)
+4. Select Soil Class **Ce** (typical shallow soil)
+5. View the results:
+   - Seismic: Z=0.50, kp=0.813, **Severe**
+   - Wind: Region B, 45 m/s, **Cyclonic**
+6. Click **➕ Insert to Drawing**
+7. Text entities with all parameters are added to your drawing
+
 ---
 
 ## File Operations
@@ -337,8 +410,65 @@ Projects are automatically saved every 60 seconds to local storage.
 | Format | Description |
 |--------|-------------|
 | DXF | AutoCAD interchange format |
-| PDF | Print-ready document |
+| PDF | Print-ready document with title block |
 | PNG | Raster image |
+
+### Exporting to PDF
+
+Access via **File > 📄 Export PDF**.
+
+The PDF export creates print-ready documents suitable for PNG Building Board submission.
+
+#### PDF Output Features
+
+| Feature | Description |
+|---------|-------------|
+| Paper Sizes | A0, A1, A2, A3, A4 |
+| Orientation | Landscape or Portrait |
+| Title Block | Automatic with project info |
+| Scale | Displayed on title block |
+| Date | Automatically added |
+
+#### What's Included in the PDF
+
+1. **Drawing Content**
+   - All visible entities
+   - All visible layers
+   - Dimensions and text
+
+2. **Title Block** (bottom of page)
+   - Project name
+   - Drawing title
+   - Scale (e.g., 1:100)
+   - Drawing number
+   - Date
+   - PNG Civil CAD branding
+
+3. **Border**
+   - 10mm margin on all sides
+   - Professional black border
+
+#### PDF Export Workflow
+
+1. Ensure all layers you want to export are visible (👁️ icon)
+2. Click **File** in the menu bar
+3. Click **📄 Export PDF**
+4. The PDF is automatically downloaded with your project name
+
+#### Tips for Best Results
+
+- **Hide construction layers** before export
+- **Zoom to fit** (Ctrl+0) ensures all content is visible
+- **Check that dimensions** are complete
+- **A3 landscape** is most common for submissions
+
+### DXF Export
+
+For sharing with AutoCAD users:
+
+1. Click **File > Export DXF**
+2. Compatible with AutoCAD 2018 and later
+3. Preserves layers, colors, and line types
 
 ### Import Options
 | Format | Description |
