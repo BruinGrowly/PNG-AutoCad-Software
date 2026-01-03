@@ -12,12 +12,7 @@ import {
   generateFloodReport,
   PNG_RIVER_SYSTEMS,
   TRADITIONAL_FLOOD_HOUSING,
-  type FloodZoneData,
-  type RiverSystemData,
-  type FloodLevelEstimate,
-  type FloodResistantDesign,
-} from '../../src/png/flood';
-import type { PNGProvince, PNGFloodZone, PNGTerrainType } from '../../src/core/types';
+} from '../../src/png/flood.js';
 
 describe('Flood Zone Data', () => {
   describe('getFloodZoneData', () => {
@@ -58,7 +53,7 @@ describe('Flood Zone Data', () => {
     });
 
     it('should have shorter return periods for higher risk zones', () => {
-      const zones: PNGFloodZone[] = ['minimal', 'moderate', 'high', 'very-high'];
+      const zones = ['minimal', 'moderate', 'high', 'very-high'];
       const returnPeriods = zones.map(z => getFloodZoneData(z).returnPeriod);
 
       for (let i = 1; i < returnPeriods.length; i++) {
@@ -108,7 +103,7 @@ describe('River Systems Database', () => {
 
       expect(flyRiver).toBeDefined();
       otherRivers.forEach(r => {
-        expect(flyRiver!.averageDischarge).toBeGreaterThanOrEqual(r.averageDischarge);
+        expect(flyRiver.averageDischarge).toBeGreaterThanOrEqual(r.averageDischarge);
       });
     });
 
@@ -116,7 +111,7 @@ describe('River Systems Database', () => {
       const sepikRiver = PNG_RIVER_SYSTEMS.find(r => r.name === 'Sepik River');
 
       expect(sepikRiver).toBeDefined();
-      expect(sepikRiver!.length).toBe(1126);
+      expect(sepikRiver.length).toBe(1126);
     });
 
     it('should include flood season months', () => {
@@ -218,7 +213,7 @@ describe('Flood Level Estimation', () => {
       const estimates = estimateFloodLevels('riverine-floodplain', 50, 10, false);
       const highReturnPeriod = estimates.find(e => e.returnPeriod === 100);
 
-      expect(highReturnPeriod!.recommendations.some(r => r.includes('Elevated'))).toBe(true);
+      expect(highReturnPeriod.recommendations.some(r => r.includes('Elevated'))).toBe(true);
     });
 
     it('should include coastal-specific recommendations', () => {
@@ -268,7 +263,7 @@ describe('Flood-Resistant Design', () => {
 
       if (design.foundationType !== 'piles') {
         expect(design.floodVents).not.toBeNull();
-        expect(design.floodVents!.quantity).toBeGreaterThan(0);
+        expect(design.floodVents.quantity).toBeGreaterThan(0);
       }
     });
 
@@ -313,21 +308,21 @@ describe('Traditional Flood Housing', () => {
       const hausWin = TRADITIONAL_FLOOD_HOUSING.find(h => h.type.includes('Haus Win'));
 
       expect(hausWin).toBeDefined();
-      expect(hausWin!.keyFeatures.some(f => f.includes('Raised floor'))).toBe(true);
+      expect(hausWin.keyFeatures.some(f => f.includes('Raised floor'))).toBe(true);
     });
 
     it('should include floating house design', () => {
       const floating = TRADITIONAL_FLOOD_HOUSING.find(h => h.type.includes('Floating'));
 
       expect(floating).toBeDefined();
-      expect(floating!.regions.some(r => r.includes('Sepik'))).toBe(true);
+      expect(floating.regions.some(r => r.includes('Sepik'))).toBe(true);
     });
 
     it('should include swamp house design', () => {
       const swamp = TRADITIONAL_FLOOD_HOUSING.find(h => h.type.includes('Warawara'));
 
       expect(swamp).toBeDefined();
-      expect(swamp!.keyFeatures.some(f => f.includes('Very high'))).toBe(true);
+      expect(swamp.keyFeatures.some(f => f.includes('Very high'))).toBe(true);
     });
 
     it('should describe modern integration options', () => {
@@ -464,7 +459,7 @@ describe('Flood Report Generation', () => {
     });
 
     it('should work for all building types', () => {
-      const buildingTypes: Array<'residential' | 'commercial' | 'community' | 'industrial'> = [
+      const buildingTypes = [
         'residential',
         'commercial',
         'community',

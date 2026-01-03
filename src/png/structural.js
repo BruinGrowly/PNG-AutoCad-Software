@@ -3,42 +3,8 @@
  * Load calculations and structural design for Papua New Guinea conditions
  */
 
-import type { PNGClimateZone, PNGSeismicZone } from '../core/types';
-import { getClimateData } from './climate';
-import type { Material } from './materials';
-import { getMaterialById } from './materials';
-
-// ============================================
-// Load Types and Definitions
-// ============================================
-
-export interface LoadCase {
-  id: string;
-  name: string;
-  type: LoadType;
-  magnitude: number;
-  unit: string;
-  duration: 'permanent' | 'long-term' | 'medium-term' | 'short-term' | 'instantaneous';
-  loadFactor: number;
-}
-
-export type LoadType =
-  | 'dead'          // Self-weight, permanent
-  | 'live'          // Occupancy
-  | 'roof-live'     // Maintenance access
-  | 'rain'          // Ponding rain
-  | 'wind'          // Wind pressure
-  | 'seismic'       // Earthquake
-  | 'soil'          // Earth pressure
-  | 'water';        // Hydrostatic
-
-export interface LoadCombination {
-  id: string;
-  name: string;
-  description: string;
-  factors: { loadCaseId: string; factor: number }[];
-  isUltimate: boolean;
-}
+import { getClimateData } from './climate.js';
+import { getMaterialById } from './materials.js';
 
 // ============================================
 // PNG-Specific Load Values
@@ -107,7 +73,7 @@ export const LIVE_LOADS = {
 
   // External
   'external-walkway': 4.0,
-  'vehicle-access': 5.0,  // Light vehicles only
+  'vehicle-access': 5.0,
 
   // Roof
   'roof-access': 0.25,
@@ -115,31 +81,10 @@ export const LIVE_LOADS = {
 };
 
 // ============================================
-// Structural Member Design
+// Timber Strength Grades for PNG Species
 // ============================================
 
-export interface TimberMemberDesign {
-  species: string;
-  grade: string;
-  width: number;          // mm
-  depth: number;          // mm
-  length: number;         // m
-  loadType: 'bending' | 'compression' | 'tension' | 'combined';
-  designLoad: number;     // kN or kN/m
-  capacity: number;       // kN or kN/m
-  utilizationRatio: number;
-  pass: boolean;
-  recommendations: string[];
-}
-
-// Timber strength grades for PNG species (MPa)
-export const TIMBER_GRADES: Record<string, {
-  f_b: number;   // Bending
-  f_t: number;   // Tension
-  f_c: number;   // Compression parallel
-  f_s: number;   // Shear
-  E: number;     // Elastic modulus (GPa)
-}> = {
+export const TIMBER_GRADES = {
   'kwila-structural': { f_b: 75, f_t: 45, f_c: 55, f_s: 8.0, E: 18 },
   'taun-structural': { f_b: 50, f_t: 30, f_c: 38, f_s: 6.5, E: 13 },
   'calophyllum-structural': { f_b: 40, f_t: 24, f_c: 30, f_s: 5.5, E: 11 },
@@ -149,26 +94,20 @@ export const TIMBER_GRADES: Record<string, {
   'general-softwood-f8': { f_b: 22, f_t: 13, f_c: 18, f_s: 3.5, E: 9 },
 };
 
-export function designTimberBeam(
-  span: number,           // m
-  tributaryWidth: number, // m
-  deadLoad: number,       // kN/m²
-  liveLoad: number,       // kN/m²
-  timberGrade: string,
-  climateZone: PNGClimateZone
-): TimberMemberDesign {
+// ============================================
+// Timber Beam Design
+// ============================================
+
+export function designTimberBeam(span, tributaryWidth, deadLoad, liveLoad, timberGrade, climateZone) {
   const grade = TIMBER_GRADES[timberGrade] || TIMBER_GRADES['general-hardwood-f14'];
 
-  // Calculate design load (factored)
-  const wD = deadLoad * tributaryWidth;  // Dead load per meter
-  const wL = liveLoad * tributaryWidth;  // Live load per meter
-  const wU = 1.2 * wD + 1.5 * wL;        // Ultimate load combination
+  const wD = deadLoad * tributaryWidth;
+  const wL = liveLoad * tributaryWidth;
+  const wU = 1.2 * wD + 1.5 * wL;
 
-  // Required section modulus
-  const M_max = (wU * span * span) / 8;  // kNm
+  const M_max = (wU * span * span) / 8;
   const Z_req = (M_max * 1e6) / (grade.f_b * getTimberDurationFactor('short-term') * getTimberMoistureFactor(climateZone));
 
-  // Try standard sizes
   const standardSizes = [
     { width: 45, depth: 90 },
     { width: 45, depth: 140 },
@@ -185,7 +124,7 @@ export function designTimberBeam(
 
   let selectedSize = standardSizes[standardSizes.length - 1];
   for (const size of standardSizes) {
-    const Z = (size.width * size.depth * size.depth) / 6;  // mm³
+    const Z = (size.width * size.depth * size.depth) / 6;
     if (Z >= Z_req) {
       selectedSize = size;
       break;
@@ -195,13 +134,12 @@ export function designTimberBeam(
   const Z_provided = (selectedSize.width * selectedSize.depth * selectedSize.depth) / 6;
   const utilizationRatio = Z_req / Z_provided;
 
-  // Check deflection
-  const I = (selectedSize.width * Math.pow(selectedSize.depth, 3)) / 12;  // mm⁴
-  const wS = wD + 0.4 * wL;  // Serviceability load
+  const I = (selectedSize.width * Math.pow(selectedSize.depth, 3)) / 12;
+  const wS = wD + 0.4 * wL;
   const delta = (5 * wS * Math.pow(span * 1000, 4)) / (384 * grade.E * 1000 * I);
   const deltaLimit = (span * 1000) / 300;
 
-  const recommendations: string[] = [];
+  const recommendations = [];
 
   if (delta > deltaLimit) {
     recommendations.push(`Deflection ${delta.toFixed(1)}mm exceeds limit ${deltaLimit.toFixed(1)}mm - increase section`);
@@ -233,8 +171,8 @@ export function designTimberBeam(
   };
 }
 
-function getTimberDurationFactor(duration: LoadCase['duration']): number {
-  const factors: Record<LoadCase['duration'], number> = {
+function getTimberDurationFactor(duration) {
+  const factors = {
     'permanent': 0.57,
     'long-term': 0.69,
     'medium-term': 0.77,
@@ -244,9 +182,8 @@ function getTimberDurationFactor(duration: LoadCase['duration']): number {
   return factors[duration];
 }
 
-function getTimberMoistureFactor(climateZone: PNGClimateZone): number {
-  // Higher moisture content reduces strength
-  const factors: Record<PNGClimateZone, number> = {
+function getTimberMoistureFactor(climateZone) {
+  const factors = {
     'tropical-coastal': 0.85,
     'tropical-highland': 0.95,
     'tropical-monsoon': 0.80,
@@ -259,57 +196,26 @@ function getTimberMoistureFactor(climateZone: PNGClimateZone): number {
 // Concrete Design
 // ============================================
 
-export interface ConcreteDesign {
-  type: 'slab' | 'beam' | 'column' | 'footing';
-  dimensions: {
-    width: number;
-    depth: number;
-    length?: number;
-  };
-  reinforcement: {
-    main: string;      // e.g., "4-N16"
-    stirrups?: string; // e.g., "N10@200"
-    distribution?: string;
-  };
-  concreteGrade: string;
-  designCapacity: number;
-  designLoad: number;
-  utilizationRatio: number;
-  coverRequired: number;
-  recommendations: string[];
-}
-
-export function designConcreteFooting(
-  columnLoad: number,        // kN
-  soilBearingCapacity: number, // kPa
-  province: string,
-  isCoastal: boolean
-): ConcreteDesign {
-  // Increase column load by factor for footing weight
+export function designConcreteFooting(columnLoad, soilBearingCapacity, province, isCoastal) {
   const totalLoad = columnLoad * 1.1;
 
-  // Required footing area
-  const areaRequired = (totalLoad * 1000) / soilBearingCapacity;  // mm²
-  const sideLength = Math.ceil(Math.sqrt(areaRequired) / 100) * 100;  // Round up to 100mm
+  const areaRequired = (totalLoad * 1000) / soilBearingCapacity;
+  const sideLength = Math.ceil(Math.sqrt(areaRequired) / 100) * 100;
 
-  // Minimum depth (greater of: shear requirement or 300mm)
   const depth = Math.max(300, sideLength / 4);
 
-  // Reinforcement calculation (simplified)
-  const M_u = (totalLoad * sideLength) / 8000;  // kNm (cantilever moment)
-  const d = depth - 75;  // Effective depth
-  const A_s = (M_u * 1e6) / (0.85 * 500 * d);  // mm² (approximate)
+  const M_u = (totalLoad * sideLength) / 8000;
+  const d = depth - 75;
+  const A_s = (M_u * 1e6) / (0.85 * 500 * d);
 
-  // Select reinforcement
   const barDiameter = A_s > 1200 ? 16 : 12;
   const barArea = Math.PI * barDiameter * barDiameter / 4;
   const numberOfBars = Math.ceil(A_s / barArea);
   const spacing = Math.floor((sideLength - 150) / (numberOfBars - 1));
 
-  const recommendations: string[] = [];
+  const recommendations = [];
 
-  // Cover requirements based on exposure
-  let cover = 50;  // Standard
+  let cover = 50;
   if (isCoastal) {
     cover = 65;
     recommendations.push('Increased cover for marine exposure');
@@ -342,29 +248,10 @@ export function designConcreteFooting(
 // Roof Design for PNG Climate
 // ============================================
 
-export interface RoofDesignResult {
-  pitch: number;              // degrees
-  overhangs: number;          // m
-  rafterSize: { width: number; depth: number };
-  rafterSpacing: number;      // mm
-  roofingMaterial: string;
-  purlins?: { size: string; spacing: number };
-  tieDownRequired: boolean;
-  upliftForce: number;        // kN
-  recommendations: string[];
-}
-
-export function designRoofForPNG(
-  span: number,               // m (building width)
-  roofType: 'gable' | 'hip' | 'skillion' | 'flat',
-  climateZone: PNGClimateZone,
-  seismicZone: PNGSeismicZone,
-  windRegion: 'standard' | 'cyclonic'
-): RoofDesignResult {
+export function designRoofForPNG(span, roofType, climateZone, seismicZone, windRegion) {
   const climateData = getClimateData(climateZone);
 
-  // Determine minimum pitch based on rainfall
-  let minPitch = 15;  // Minimum for corrugated iron
+  let minPitch = 15;
   if (climateData.rainfall.annual > 3000) {
     minPitch = 25;
   }
@@ -374,8 +261,7 @@ export function designRoofForPNG(
 
   const pitch = roofType === 'flat' ? 5 : Math.max(minPitch, 20);
 
-  // Overhang recommendation
-  let overhang = 0.6;  // Minimum
+  let overhang = 0.6;
   if (climateData.rainfall.annual > 2500) {
     overhang = 0.9;
   }
@@ -383,11 +269,9 @@ export function designRoofForPNG(
     overhang = 1.2;
   }
 
-  // Rafter sizing (simplified)
-  const rafterSpan = span / 2;  // For gable roof
-  const rafterLoad = 0.15 + (windRegion === 'cyclonic' ? 1.0 : 0.5);  // kN/m²
+  const rafterSpan = span / 2;
+  const rafterLoad = 0.15 + (windRegion === 'cyclonic' ? 1.0 : 0.5);
 
-  // Simple rafter sizing table
   const rafterTable = [
     { maxSpan: 2.5, size: { width: 45, depth: 90 } },
     { maxSpan: 3.5, size: { width: 45, depth: 140 } },
@@ -399,17 +283,16 @@ export function designRoofForPNG(
   const rafterSize = rafterTable.find(r => rafterSpan <= r.maxSpan)?.size
     || { width: 90, depth: 290 };
 
-  // Uplift calculation (simplified)
   const upliftCoefficient = windRegion === 'cyclonic' ? 1.2 : 0.8;
-  const windSpeed = climateData.wind.maxGust / 3.6;  // m/s
-  const windPressure = 0.5 * 1.2 * windSpeed * windSpeed / 1000;  // kPa
+  const windSpeed = climateData.wind.maxGust / 3.6;
+  const windPressure = 0.5 * 1.2 * windSpeed * windSpeed / 1000;
   const upliftForce = windPressure * upliftCoefficient;
 
   const tieDownRequired = windRegion === 'cyclonic' ||
     seismicZone === 'zone-3' ||
     seismicZone === 'zone-4';
 
-  const recommendations: string[] = [];
+  const recommendations = [];
 
   recommendations.push(`Minimum roof pitch: ${pitch}°`);
   recommendations.push(`Minimum overhang: ${overhang}m for weather protection`);
@@ -436,7 +319,7 @@ export function designRoofForPNG(
     pitch,
     overhangs: overhang,
     rafterSize,
-    rafterSpacing: 600,  // Standard
+    rafterSpacing: 600,
     roofingMaterial: 'corrugated-iron-0.55',
     purlins: {
       size: '70x45',
@@ -452,14 +335,9 @@ export function designRoofForPNG(
 // Load Combination Generator
 // ============================================
 
-export function generateLoadCombinations(
-  hasWind: boolean,
-  hasSeismic: boolean,
-  hasFlood: boolean
-): LoadCombination[] {
-  const combinations: LoadCombination[] = [];
+export function generateLoadCombinations(hasWind, hasSeismic, hasFlood) {
+  const combinations = [];
 
-  // Ultimate limit state combinations
   combinations.push({
     id: 'ulc-1',
     name: '1.35G',
@@ -532,7 +410,6 @@ export function generateLoadCombinations(
     });
   }
 
-  // Serviceability combinations
   combinations.push({
     id: 'slc-1',
     name: 'G + Q',
@@ -562,37 +439,7 @@ export function generateLoadCombinations(
 // Structural Report Generator
 // ============================================
 
-export interface StructuralReport {
-  projectInfo: {
-    name: string;
-    location: string;
-    date: Date;
-  };
-  designCriteria: {
-    climateZone: PNGClimateZone;
-    seismicZone: PNGSeismicZone;
-    soilClass: string;
-    windRegion: string;
-  };
-  loads: {
-    dead: number;
-    live: number;
-    wind: number;
-    seismic: number;
-  };
-  loadCombinations: LoadCombination[];
-  memberDesigns: (TimberMemberDesign | ConcreteDesign)[];
-  generalRecommendations: string[];
-  referenceStandards: string[];
-}
-
-export function generateStructuralReport(
-  projectName: string,
-  location: string,
-  climateZone: PNGClimateZone,
-  seismicZone: PNGSeismicZone,
-  memberDesigns: (TimberMemberDesign | ConcreteDesign)[]
-): StructuralReport {
+export function generateStructuralReport(projectName, location, climateZone, seismicZone, memberDesigns) {
   const combinations = generateLoadCombinations(true, true, false);
 
   const generalRecommendations = [
@@ -618,7 +465,7 @@ export function generateStructuralReport(
     designCriteria: {
       climateZone,
       seismicZone,
-      soilClass: 'D',  // Default for PNG
+      soilClass: 'D',
       windRegion: 'standard',
     },
     loads: {

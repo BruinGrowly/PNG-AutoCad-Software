@@ -3,23 +3,11 @@
  * Flood risk assessment and design for Papua New Guinea
  */
 
-import type { PNGProvince, PNGFloodZone, PNGTerrainType, Point2D } from '../core/types';
-
 // ============================================
 // Flood Zone Definitions
 // ============================================
 
-export interface FloodZoneData {
-  zone: PNGFloodZone;
-  description: string;
-  returnPeriod: number;           // years
-  expectedFrequency: string;
-  minimumFloorElevation: number;  // meters above ground
-  constructionRestrictions: string[];
-  insuranceCategory: 'standard' | 'elevated' | 'restricted';
-}
-
-const FLOOD_ZONE_DATA: Record<PNGFloodZone, FloodZoneData> = {
+const FLOOD_ZONE_DATA = {
   'minimal': {
     zone: 'minimal',
     description: 'Areas with minimal flood risk',
@@ -76,12 +64,12 @@ const FLOOD_ZONE_DATA: Record<PNGFloodZone, FloodZoneData> = {
 // Terrain-based Flood Risk
 // ============================================
 
-const TERRAIN_FLOOD_RISK: Record<PNGTerrainType, PNGFloodZone> = {
+const TERRAIN_FLOOD_RISK = {
   'coastal-lowland': 'moderate',
   'riverine-floodplain': 'very-high',
   'highland-valley': 'moderate',
   'mountainous': 'minimal',
-  'island-atoll': 'moderate',  // Tidal/storm surge risk
+  'island-atoll': 'moderate',
   'swamp-wetland': 'very-high',
 };
 
@@ -89,19 +77,7 @@ const TERRAIN_FLOOD_RISK: Record<PNGTerrainType, PNGFloodZone> = {
 // Major River Systems in PNG
 // ============================================
 
-export interface RiverSystemData {
-  name: string;
-  provinces: PNGProvince[];
-  length: number;           // km
-  catchmentArea: number;    // km²
-  averageDischarge: number; // m³/s
-  floodRisk: PNGFloodZone;
-  majorTributaries: string[];
-  floodSeason: number[];    // months (1-12)
-  notes: string;
-}
-
-export const PNG_RIVER_SYSTEMS: RiverSystemData[] = [
+export const PNG_RIVER_SYSTEMS = [
   {
     name: 'Sepik River',
     provinces: ['East Sepik', 'Sandaun'],
@@ -163,15 +139,15 @@ export const PNG_RIVER_SYSTEMS: RiverSystemData[] = [
 // Flood Analysis Functions
 // ============================================
 
-export function getFloodZoneData(zone: PNGFloodZone): FloodZoneData {
+export function getFloodZoneData(zone) {
   return FLOOD_ZONE_DATA[zone];
 }
 
-export function getTerrainFloodRisk(terrainType: PNGTerrainType): PNGFloodZone {
+export function getTerrainFloodRisk(terrainType) {
   return TERRAIN_FLOOD_RISK[terrainType];
 }
 
-export function getRiverSystemsForProvince(province: PNGProvince): RiverSystemData[] {
+export function getRiverSystemsForProvince(province) {
   return PNG_RIVER_SYSTEMS.filter(r => r.provinces.includes(province));
 }
 
@@ -179,60 +155,42 @@ export function getRiverSystemsForProvince(province: PNGProvince): RiverSystemDa
 // Flood Level Estimation
 // ============================================
 
-export interface FloodLevelEstimate {
-  returnPeriod: number;      // years
-  floodLevel: number;        // meters above normal water level
-  velocity: number;          // m/s (estimated flow velocity)
-  duration: number;          // hours (typical flood duration)
-  debrisRisk: 'low' | 'moderate' | 'high';
-  recommendations: string[];
-}
+export function estimateFloodLevels(terrainType, distanceFromWater, groundElevation, isCoastal) {
+  const estimates = [];
 
-export function estimateFloodLevels(
-  terrainType: PNGTerrainType,
-  distanceFromWater: number,  // meters
-  groundElevation: number,    // meters above sea level
-  isCoastal: boolean
-): FloodLevelEstimate[] {
-  const estimates: FloodLevelEstimate[] = [];
-
-  // Base flood levels based on terrain
-  const baseLevel: Record<PNGTerrainType, number> = {
+  const baseLevel = {
     'coastal-lowland': 1.5,
     'riverine-floodplain': 3.0,
     'highland-valley': 1.0,
     'mountainous': 0.3,
-    'island-atoll': 2.0,  // Storm surge
+    'island-atoll': 2.0,
     'swamp-wetland': 2.5,
   };
 
   const base = baseLevel[terrainType];
-
-  // Adjust for distance from water
   const distanceFactor = Math.max(0.3, 1 - distanceFromWater / 500);
 
-  // Return periods: 10, 50, 100, 500 years
   const returnPeriods = [10, 50, 100, 500];
 
   for (const rp of returnPeriods) {
-    const rpFactor = Math.log10(rp) / 2;  // Approximate scaling
+    const rpFactor = Math.log10(rp) / 2;
     const level = base * rpFactor * distanceFactor;
 
-    let velocity = 1.0;  // Base velocity
+    let velocity = 1.0;
     if (terrainType === 'mountainous' || terrainType === 'highland-valley') {
-      velocity = 2.5;  // Faster in steep terrain
+      velocity = 2.5;
     } else if (terrainType === 'swamp-wetland') {
-      velocity = 0.5;  // Slower in wetlands
+      velocity = 0.5;
     }
 
-    let duration = 24;  // hours
+    let duration = 24;
     if (terrainType === 'riverine-floodplain') {
-      duration = 72;  // Extended flooding
+      duration = 72;
     } else if (terrainType === 'mountainous') {
-      duration = 6;  // Flash floods
+      duration = 6;
     }
 
-    const recommendations: string[] = [];
+    const recommendations = [];
 
     if (level > 1.0) {
       recommendations.push('Elevated construction required');
@@ -266,26 +224,10 @@ export function estimateFloodLevels(
 // Flood-Resistant Design
 // ============================================
 
-export interface FloodResistantDesign {
-  foundationType: 'elevated-slab' | 'piles' | 'platform' | 'floating';
-  minimumFloorHeight: number;
-  wallConstruction: string;
-  floodOpenings: boolean;
-  floodVents: { size: string; quantity: number } | null;
-  materials: string[];
-  serviceLocations: string[];
-  accessRequirements: string[];
-  emergencyFeatures: string[];
-}
-
-export function designForFloodZone(
-  floodZone: PNGFloodZone,
-  buildingType: 'residential' | 'commercial' | 'community' | 'industrial',
-  designFloodLevel: number  // meters above ground
-): FloodResistantDesign {
+export function designForFloodZone(floodZone, buildingType, designFloodLevel) {
   const zoneData = getFloodZoneData(floodZone);
 
-  let foundationType: FloodResistantDesign['foundationType'] = 'elevated-slab';
+  let foundationType = 'elevated-slab';
   if (floodZone === 'very-high') {
     foundationType = 'piles';
   } else if (floodZone === 'high') {
@@ -294,30 +236,25 @@ export function designForFloodZone(
 
   const minimumFloorHeight = Math.max(
     zoneData.minimumFloorElevation,
-    designFloodLevel + 0.3  // Add 300mm freeboard
+    designFloodLevel + 0.3
   );
 
-  // Wall construction recommendations
   let wallConstruction = 'Standard construction above flood level';
   if (floodZone === 'high' || floodZone === 'very-high') {
     wallConstruction = 'Flood-resistant walls below flood level: concrete block with render, or treated timber with removable panels';
   }
 
-  // Flood openings required for enclosed areas below flood level
   const floodOpenings = floodZone !== 'minimal';
 
-  // Calculate flood vents if needed
-  let floodVents: FloodResistantDesign['floodVents'] = null;
+  let floodVents = null;
   if (floodOpenings && foundationType !== 'piles') {
-    // 1 sq inch per sq foot of enclosed area (simplified)
     floodVents = {
       size: '150x150mm mesh-protected vents',
-      quantity: 4,  // Minimum per enclosed space
+      quantity: 4,
     };
   }
 
-  // Material recommendations
-  const materials: string[] = [];
+  const materials = [];
   if (floodZone !== 'minimal') {
     materials.push('Concrete or treated timber for subfloor structure');
     materials.push('Galvanized or stainless steel fasteners');
@@ -327,7 +264,6 @@ export function designForFloodZone(
   materials.push('Mold-resistant materials throughout');
   materials.push('Treated timber (H4 or higher) for ground contact');
 
-  // Service locations
   const serviceLocations = [
     `Electrical switchboard: minimum ${minimumFloorHeight + 0.3}m above ground`,
     `Hot water system: above flood level`,
@@ -339,8 +275,7 @@ export function designForFloodZone(
     serviceLocations.push('Fuel storage: anchored and above flood level');
   }
 
-  // Access requirements
-  const accessRequirements: string[] = [];
+  const accessRequirements = [];
   if (minimumFloorHeight > 0.6) {
     accessRequirements.push('Stairs with handrails required');
     accessRequirements.push('Consider ramp for accessibility');
@@ -350,8 +285,7 @@ export function designForFloodZone(
     accessRequirements.push('Boat tie-up point recommended');
   }
 
-  // Emergency features
-  const emergencyFeatures: string[] = [];
+  const emergencyFeatures = [];
   if (floodZone !== 'minimal') {
     emergencyFeatures.push('Flood warning markers on building');
     emergencyFeatures.push('Emergency supply storage above flood level');
@@ -379,16 +313,7 @@ export function designForFloodZone(
 // Traditional PNG Flood-Adapted Housing
 // ============================================
 
-export interface TraditionalFloodHousing {
-  type: string;
-  description: string;
-  regions: string[];
-  keyFeatures: string[];
-  adaptations: string[];
-  modernIntegration: string[];
-}
-
-export const TRADITIONAL_FLOOD_HOUSING: TraditionalFloodHousing[] = [
+export const TRADITIONAL_FLOOD_HOUSING = [
   {
     type: 'Haus Win (Stilt House)',
     description: 'Traditional elevated house on timber posts, common in lowland and coastal areas',
@@ -464,43 +389,22 @@ export const TRADITIONAL_FLOOD_HOUSING: TraditionalFloodHousing[] = [
 // Flood Report Generation
 // ============================================
 
-export interface FloodReport {
-  location: string;
-  terrainType: PNGTerrainType;
-  floodZone: PNGFloodZone;
-  zoneData: FloodZoneData;
-  nearbyRivers: RiverSystemData[];
-  floodEstimates: FloodLevelEstimate[];
-  designRequirements: FloodResistantDesign;
-  traditionalApproaches: TraditionalFloodHousing[];
-  recommendations: string[];
-}
-
-export function generateFloodReport(
-  province: PNGProvince,
-  terrainType: PNGTerrainType,
-  distanceFromWater: number,
-  groundElevation: number,
-  buildingType: 'residential' | 'commercial' | 'community' | 'industrial',
-  isCoastal: boolean
-): FloodReport {
+export function generateFloodReport(province, terrainType, distanceFromWater, groundElevation, buildingType, isCoastal) {
   const floodZone = getTerrainFloodRisk(terrainType);
   const zoneData = getFloodZoneData(floodZone);
   const nearbyRivers = getRiverSystemsForProvince(province);
   const floodEstimates = estimateFloodLevels(terrainType, distanceFromWater, groundElevation, isCoastal);
 
-  // Use 100-year flood for design
   const designFloodLevel = floodEstimates.find(e => e.returnPeriod === 100)?.floodLevel || 1.5;
   const designRequirements = designForFloodZone(floodZone, buildingType, designFloodLevel);
 
-  // Select relevant traditional approaches
   const traditionalApproaches = TRADITIONAL_FLOOD_HOUSING.filter(t =>
     terrainType === 'riverine-floodplain' ||
     terrainType === 'swamp-wetland' ||
     terrainType === 'coastal-lowland'
   );
 
-  const recommendations: string[] = [];
+  const recommendations = [];
 
   if (nearbyRivers.length > 0) {
     recommendations.push(`Located near ${nearbyRivers.map(r => r.name).join(', ')} - check historical flood levels`);

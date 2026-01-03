@@ -3,60 +3,11 @@
  * Provides climate data and design recommendations for Papua New Guinea
  */
 
-import type { PNGProvince, PNGClimateZone, PNGTerrainType } from '../core/types';
-
-// ============================================
-// Climate Data Types
-// ============================================
-
-export interface ClimateData {
-  zone: PNGClimateZone;
-  averageTemperature: {
-    min: number;  // Celsius
-    max: number;
-    annual: number;
-  };
-  humidity: {
-    min: number;  // Percentage
-    max: number;
-    annual: number;
-  };
-  rainfall: {
-    annual: number;        // mm per year
-    wetSeasonMonths: number[];  // 1-12
-    maxMonthly: number;    // mm
-    maxDaily: number;      // mm (design storm)
-  };
-  wind: {
-    averageSpeed: number;  // km/h
-    maxGust: number;       // km/h (design wind)
-    predominantDirection: string;
-    cycloneRisk: 'none' | 'low' | 'moderate' | 'high';
-  };
-  sunExposure: {
-    averageDailyHours: number;
-    uvIndex: number;
-  };
-}
-
-export interface ClimateDesignFactors {
-  ventilationRequired: 'minimal' | 'moderate' | 'extensive';
-  insulationRequired: boolean;
-  moistureProtection: 'standard' | 'enhanced' | 'maximum';
-  roofPitchMin: number;  // degrees
-  overhangsRecommended: number;  // meters
-  crossVentilationRequired: boolean;
-  elevatedFloorRequired: boolean;
-  corrosionProtection: 'standard' | 'enhanced' | 'marine-grade';
-  termiteProtection: 'standard' | 'enhanced';
-  moldPreventionMeasures: string[];
-}
-
 // ============================================
 // Province Climate Mapping
 // ============================================
 
-const PROVINCE_CLIMATE_ZONES: Record<PNGProvince, PNGClimateZone> = {
+const PROVINCE_CLIMATE_ZONES = {
   'Central': 'tropical-coastal',
   'East New Britain': 'tropical-island',
   'East Sepik': 'tropical-monsoon',
@@ -85,7 +36,7 @@ const PROVINCE_CLIMATE_ZONES: Record<PNGProvince, PNGClimateZone> = {
 // Climate Zone Data
 // ============================================
 
-const CLIMATE_ZONE_DATA: Record<PNGClimateZone, ClimateData> = {
+const CLIMATE_ZONE_DATA = {
   'tropical-coastal': {
     zone: 'tropical-coastal',
     averageTemperature: { min: 23, max: 32, annual: 27 },
@@ -167,20 +118,20 @@ const CLIMATE_ZONE_DATA: Record<PNGClimateZone, ClimateData> = {
 // Climate Analysis Functions
 // ============================================
 
-export function getClimateZone(province: PNGProvince): PNGClimateZone {
+export function getClimateZone(province) {
   return PROVINCE_CLIMATE_ZONES[province];
 }
 
-export function getClimateData(zone: PNGClimateZone): ClimateData {
+export function getClimateData(zone) {
   return CLIMATE_ZONE_DATA[zone];
 }
 
-export function getClimateDataForProvince(province: PNGProvince): ClimateData {
+export function getClimateDataForProvince(province) {
   const zone = getClimateZone(province);
   return getClimateData(zone);
 }
 
-export function getDesignFactors(climateData: ClimateData, terrainType: PNGTerrainType): ClimateDesignFactors {
+export function getDesignFactors(climateData, terrainType) {
   const isCoastal = terrainType === 'coastal-lowland' || terrainType === 'island-atoll';
   const isFloodProne = terrainType === 'riverine-floodplain' || terrainType === 'swamp-wetland';
   const isHighHumidity = climateData.humidity.annual > 80;
@@ -188,29 +139,20 @@ export function getDesignFactors(climateData: ClimateData, terrainType: PNGTerra
 
   return {
     ventilationRequired: isHighHumidity ? 'extensive' : climateData.averageTemperature.max > 30 ? 'moderate' : 'minimal',
-
     insulationRequired: climateData.zone === 'tropical-highland',
-
     moistureProtection: isHighRainfall ? 'maximum' : isHighHumidity ? 'enhanced' : 'standard',
-
     roofPitchMin: isHighRainfall ? 30 : climateData.rainfall.annual > 2000 ? 25 : 20,
-
     overhangsRecommended: isHighRainfall ? 1.2 : 0.9,
-
     crossVentilationRequired: isHighHumidity && climateData.averageTemperature.max > 28,
-
     elevatedFloorRequired: isFloodProne,
-
     corrosionProtection: isCoastal ? 'marine-grade' : isHighHumidity ? 'enhanced' : 'standard',
-
     termiteProtection: climateData.averageTemperature.annual > 25 ? 'enhanced' : 'standard',
-
     moldPreventionMeasures: getMoldPreventionMeasures(isHighHumidity, isHighRainfall),
   };
 }
 
-function getMoldPreventionMeasures(isHighHumidity: boolean, isHighRainfall: boolean): string[] {
-  const measures: string[] = [];
+function getMoldPreventionMeasures(isHighHumidity, isHighRainfall) {
+  const measures = [];
 
   if (isHighHumidity || isHighRainfall) {
     measures.push('Use mold-resistant materials and coatings');
@@ -238,74 +180,32 @@ function getMoldPreventionMeasures(isHighHumidity: boolean, isHighRainfall: bool
 // Rainfall & Drainage Calculations
 // ============================================
 
-export interface DrainageDesignParams {
-  catchmentArea: number;      // m²
-  rainfallIntensity: number;  // mm/hr
-  runoffCoefficient: number;  // 0-1
-  timeOfConcentration: number; // minutes
-}
-
-export interface DrainageResult {
-  peakRunoff: number;         // m³/s
-  pipeSize: number;           // mm diameter
-  channelWidth: number;       // m (if open channel)
-  channelDepth: number;       // m
-  slope: number;              // %
-  recommendations: string[];
-}
-
-export function calculateDesignRainfallIntensity(
-  climateData: ClimateData,
-  returnPeriod: number,  // years (e.g., 10, 25, 50, 100)
-  duration: number       // minutes
-): number {
-  // IDF curve approximation for PNG tropical conditions
-  // I = a / (t + b)^c where I is intensity, t is duration
-
-  const baseIntensity = climateData.rainfall.maxDaily / 24 * 60; // Convert to mm/hr
-
-  // Adjust for return period (approximate)
+export function calculateDesignRainfallIntensity(climateData, returnPeriod, duration) {
+  const baseIntensity = climateData.rainfall.maxDaily / 24 * 60;
   const returnFactor = Math.log(returnPeriod) / Math.log(10) * 0.4 + 0.6;
-
-  // Duration adjustment
   const durationFactor = Math.pow(60 / (duration + 10), 0.7);
-
   return baseIntensity * returnFactor * durationFactor;
 }
 
-export function calculateDrainageRequirements(params: DrainageDesignParams): DrainageResult {
-  // Rational method: Q = CIA/360
-  // Q = peak runoff (m³/s)
-  // C = runoff coefficient
-  // I = rainfall intensity (mm/hr)
-  // A = catchment area (hectares)
-
+export function calculateDrainageRequirements(params) {
   const areaHectares = params.catchmentArea / 10000;
   const peakRunoff = (params.runoffCoefficient * params.rainfallIntensity * areaHectares) / 360;
 
-  // Manning's equation for pipe sizing
-  // Assuming n = 0.013 (concrete), slope = 1%
   const n = 0.013;
   const slope = 0.01;
-
-  // Q = (1/n) * A * R^(2/3) * S^(1/2)
-  // For circular pipe flowing full: A = πD²/4, R = D/4
-  // Solving for D: D = (Q * n * 4^(5/3) / (π * S^(1/2)))^(3/8) * (4/π)^(3/8)
 
   const pipeDiameter = Math.pow(
     (peakRunoff * n * Math.pow(4, 5/3)) / (Math.PI * Math.sqrt(slope)),
     3/8
-  ) * Math.pow(4/Math.PI, 3/8) * 1000; // Convert to mm
+  ) * Math.pow(4/Math.PI, 3/8) * 1000;
 
-  // Round up to standard sizes
   const standardSizes = [100, 150, 200, 225, 300, 375, 450, 525, 600, 750, 900, 1050, 1200];
   const pipeSize = standardSizes.find(s => s >= pipeDiameter) || standardSizes[standardSizes.length - 1];
 
-  // Open channel alternative (trapezoidal)
-  const channelWidth = Math.sqrt(peakRunoff / 0.5); // Approximate
+  const channelWidth = Math.sqrt(peakRunoff / 0.5);
   const channelDepth = channelWidth * 0.5;
 
-  const recommendations: string[] = [];
+  const recommendations = [];
 
   if (peakRunoff > 0.5) {
     recommendations.push('Consider multiple smaller drains instead of single large drain');
@@ -333,55 +233,21 @@ export function calculateDrainageRequirements(params: DrainageDesignParams): Dra
 // Wind Load Calculations (PNG Building Code)
 // ============================================
 
-export interface WindLoadParams {
-  climateData: ClimateData;
-  buildingHeight: number;     // m
-  buildingWidth: number;      // m
-  buildingLength: number;     // m
-  terrainCategory: 1 | 2 | 3 | 4;  // 1=open, 4=city
-  importanceLevel: 1 | 2 | 3 | 4;  // Building importance
-  topographyFactor: number;   // 1.0-1.5
-}
-
-export interface WindLoadResult {
-  designWindSpeed: number;    // m/s
-  pressureCoefficient: number;
-  windPressure: number;       // kPa
-  upliftForce: number;        // kN/m²
-  recommendations: string[];
-}
-
-export function calculateWindLoad(params: WindLoadParams): WindLoadResult {
-  // Based on AS/NZS 1170.2 adapted for PNG
-
-  // Regional wind speed (from climate data, convert km/h to m/s)
+export function calculateWindLoad(params) {
   const V_R = params.climateData.wind.maxGust / 3.6;
-
-  // Terrain-height multiplier (simplified)
   const M_zh = getTerrainMultiplier(params.buildingHeight, params.terrainCategory);
-
-  // Shielding multiplier (assume no shielding)
   const M_s = 1.0;
-
-  // Topographic multiplier
   const M_t = params.topographyFactor;
 
-  // Design wind speed
   const V_des = V_R * M_zh * M_s * M_t;
 
-  // Wind pressure (q = 0.5 * ρ * V²)
-  const airDensity = 1.2; // kg/m³
-  const dynamicPressure = 0.5 * airDensity * V_des * V_des / 1000; // kPa
-
-  // Pressure coefficient (simplified for rectangular building)
-  const pressureCoefficient = 1.3; // Windward face
-
+  const airDensity = 1.2;
+  const dynamicPressure = 0.5 * airDensity * V_des * V_des / 1000;
+  const pressureCoefficient = 1.3;
   const windPressure = dynamicPressure * pressureCoefficient;
+  const upliftForce = dynamicPressure * 1.5;
 
-  // Uplift (roof)
-  const upliftForce = dynamicPressure * 1.5; // Conservative estimate
-
-  const recommendations: string[] = [];
+  const recommendations = [];
 
   if (params.climateData.wind.cycloneRisk === 'high') {
     recommendations.push('Design for cyclonic wind conditions');
@@ -405,17 +271,15 @@ export function calculateWindLoad(params: WindLoadParams): WindLoadResult {
   };
 }
 
-function getTerrainMultiplier(height: number, category: 1 | 2 | 3 | 4): number {
-  // Simplified terrain multipliers
-  const baseMultipliers: Record<number, number> = {
-    1: 1.12,  // Open terrain
-    2: 1.00,  // Rural
-    3: 0.89,  // Suburban
-    4: 0.75,  // City center
+function getTerrainMultiplier(height, category) {
+  const baseMultipliers = {
+    1: 1.12,
+    2: 1.00,
+    3: 0.89,
+    4: 0.75,
   };
 
   const heightFactor = Math.pow(Math.max(height, 3) / 10, 0.15);
-
   return baseMultipliers[category] * heightFactor;
 }
 
@@ -423,31 +287,18 @@ function getTerrainMultiplier(height: number, category: 1 | 2 | 3 | 4): number {
 // Thermal Comfort Analysis
 // ============================================
 
-export interface ThermalComfortResult {
-  thermalStress: 'none' | 'mild' | 'moderate' | 'high';
-  coolingStrategy: string[];
-  heatingRequired: boolean;
-  naturalVentilationViable: boolean;
-  recommendedOpeningPercentage: number;  // % of floor area
-}
-
-export function analyzeThermalComfort(
-  climateData: ClimateData,
-  buildingType: 'residential' | 'commercial' | 'industrial' | 'educational'
-): ThermalComfortResult {
+export function analyzeThermalComfort(climateData, buildingType) {
   const maxTemp = climateData.averageTemperature.max;
   const humidity = climateData.humidity.annual;
-
-  // Apparent temperature (heat index approximation)
   const heatIndex = maxTemp + (0.5 * (humidity - 50));
 
-  let thermalStress: ThermalComfortResult['thermalStress'];
+  let thermalStress;
   if (heatIndex < 28) thermalStress = 'none';
   else if (heatIndex < 32) thermalStress = 'mild';
   else if (heatIndex < 38) thermalStress = 'moderate';
   else thermalStress = 'high';
 
-  const coolingStrategy: string[] = [];
+  const coolingStrategy = [];
 
   if (thermalStress !== 'none') {
     coolingStrategy.push('Maximize cross-ventilation');
@@ -469,8 +320,7 @@ export function analyzeThermalComfort(
     humidity < 85 &&
     climateData.wind.averageSpeed > 5;
 
-  // Recommended opening percentage based on climate
-  let openingPercentage = 10; // Minimum
+  let openingPercentage = 10;
   if (thermalStress === 'mild') openingPercentage = 15;
   if (thermalStress === 'moderate') openingPercentage = 20;
   if (thermalStress === 'high') openingPercentage = 25;
@@ -488,31 +338,17 @@ export function analyzeThermalComfort(
 // Export Climate Report
 // ============================================
 
-export interface ClimateReport {
-  province: PNGProvince;
-  climateZone: PNGClimateZone;
-  climateData: ClimateData;
-  designFactors: ClimateDesignFactors;
-  thermalComfort: ThermalComfortResult;
-  recommendations: string[];
-}
-
-export function generateClimateReport(
-  province: PNGProvince,
-  terrainType: PNGTerrainType,
-  buildingType: 'residential' | 'commercial' | 'industrial' | 'educational'
-): ClimateReport {
+export function generateClimateReport(province, terrainType, buildingType) {
   const climateZone = getClimateZone(province);
   const climateData = getClimateData(climateZone);
   const designFactors = getDesignFactors(climateData, terrainType);
   const thermalComfort = analyzeThermalComfort(climateData, buildingType);
 
-  const recommendations: string[] = [
+  const recommendations = [
     ...designFactors.moldPreventionMeasures,
     ...thermalComfort.coolingStrategy,
   ];
 
-  // Add terrain-specific recommendations
   if (terrainType === 'coastal-lowland') {
     recommendations.push('Use corrosion-resistant materials for coastal exposure');
     recommendations.push('Design for potential storm surge if near coast');
@@ -535,6 +371,6 @@ export function generateClimateReport(
     climateData,
     designFactors,
     thermalComfort,
-    recommendations: [...new Set(recommendations)], // Remove duplicates
+    recommendations: [...new Set(recommendations)],
   };
 }
