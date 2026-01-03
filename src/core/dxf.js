@@ -768,6 +768,8 @@ export function parseDXF(dxfContent) {
 function parseEntity(lines, startIndex, entityType) {
   const data = {};
   let i = startIndex + 2;
+  const vertices = [];
+  let currentVertex = null;
 
   // Read group codes until next entity
   while (i < lines.length && lines[i] !== '0') {
@@ -776,18 +778,49 @@ function parseEntity(lines, startIndex, entityType) {
 
     switch (code) {
       case 8: data.layer = value; break;
-      case 10: data.x1 = parseFloat(value); break;
-      case 20: data.y1 = parseFloat(value); break;
+      case 10:
+        // For LWPOLYLINE, code 10 starts a new vertex
+        if (entityType === 'LWPOLYLINE') {
+          if (currentVertex) vertices.push(currentVertex);
+          currentVertex = { x: parseFloat(value), y: 0, bulge: 0 };
+        } else {
+          data.x1 = parseFloat(value);
+        }
+        break;
+      case 20:
+        if (entityType === 'LWPOLYLINE' && currentVertex) {
+          currentVertex.y = parseFloat(value);
+        } else {
+          data.y1 = parseFloat(value);
+        }
+        break;
       case 11: data.x2 = parseFloat(value); break;
       case 21: data.y2 = parseFloat(value); break;
       case 40: data.radius = parseFloat(value); break;
+      case 41: data.scaleX = parseFloat(value); break;
+      case 42:
+        if (entityType === 'LWPOLYLINE' && currentVertex) {
+          currentVertex.bulge = parseFloat(value); // Arc bulge factor
+        } else {
+          data.scaleY = parseFloat(value);
+        }
+        break;
+      case 43: data.scaleZ = parseFloat(value); break;
       case 50: data.startAngle = parseFloat(value); break;
       case 51: data.endAngle = parseFloat(value); break;
       case 1: data.text = value; break;
+      case 2: data.blockName = value; break; // Block name for INSERT
       case 62: data.color = parseInt(value); break;
+      case 70: data.flags = parseInt(value); break;
+      case 90: data.numVertices = parseInt(value); break;
     }
 
     i += 2;
+  }
+
+  // Finalize LWPOLYLINE vertices
+  if (entityType === 'LWPOLYLINE' && currentVertex) {
+    vertices.push(currentVertex);
   }
 
   // Convert to internal format
@@ -798,6 +831,21 @@ function parseEntity(lines, startIndex, entityType) {
         startPoint: { x: data.x1 || 0, y: data.y1 || 0 },
         endPoint: { x: data.x2 || 0, y: data.y2 || 0 },
         layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
+      };
+
+    case 'LWPOLYLINE':
+    case 'POLYLINE':
+      return {
+        type: 'polyline',
+        points: vertices.map(v => ({ x: v.x, y: v.y })),
+        closed: (data.flags & 1) === 1, // Flag 1 = closed
+        layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
       };
 
     case 'CIRCLE':
@@ -806,6 +854,9 @@ function parseEntity(lines, startIndex, entityType) {
         center: { x: data.x1 || 0, y: data.y1 || 0 },
         radius: data.radius || 1,
         layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
       };
 
     case 'ARC':
@@ -816,15 +867,63 @@ function parseEntity(lines, startIndex, entityType) {
         startAngle: ((data.startAngle || 0) * Math.PI) / 180,
         endAngle: ((data.endAngle || 360) * Math.PI) / 180,
         layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
       };
 
     case 'TEXT':
+    case 'MTEXT':
       return {
         type: 'text',
         position: { x: data.x1 || 0, y: data.y1 || 0 },
         content: data.text || '',
         fontSize: data.radius || 2.5,
         layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7) },
+      };
+
+    case 'INSERT':
+      return {
+        type: 'block',
+        blockName: data.blockName || 'Unknown',
+        position: { x: data.x1 || 0, y: data.y1 || 0 },
+        scale: data.scaleX || 1,
+        scaleY: data.scaleY || data.scaleX || 1,
+        rotation: ((data.startAngle || 0) * Math.PI) / 180,
+        layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+      };
+
+    case 'ELLIPSE':
+      // Ellipse defined by center, major axis endpoint, ratio of minor to major
+      return {
+        type: 'ellipse',
+        center: { x: data.x1 || 0, y: data.y1 || 0 },
+        majorAxisEnd: { x: data.x2 || 1, y: data.y2 || 0 },
+        ratio: data.radius || 0.5, // Code 40 is ratio for ellipse
+        startAngle: data.startAngle || 0,
+        endAngle: data.endAngle || Math.PI * 2,
+        layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
+      };
+
+    case 'SPLINE':
+      // Splines are complex - import as polyline for now (control points)
+      return {
+        type: 'polyline',
+        points: vertices.map(v => ({ x: v.x, y: v.y })),
+        closed: (data.flags & 1) === 1,
+        layerId: data.layer || 'layer-0',
+        visible: true,
+        locked: false,
+        style: { strokeColor: aciToColor(data.color || 7), strokeWidth: 1 },
+        isSpline: true, // Mark for future spline rendering
       };
 
     default:

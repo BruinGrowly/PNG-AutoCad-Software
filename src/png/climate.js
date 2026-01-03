@@ -3,6 +3,8 @@
  * Provides climate data and design recommendations for Papua New Guinea
  */
 
+import { normalizeProvinceName, lookupByProvince } from './provinces.js';
+
 // ============================================
 // Province Climate Mapping
 // ============================================
@@ -119,7 +121,8 @@ const CLIMATE_ZONE_DATA = {
 // ============================================
 
 export function getClimateZone(province) {
-  return PROVINCE_CLIMATE_ZONES[province];
+  // Use normalized lookup for case-insensitive matching
+  return lookupByProvince(PROVINCE_CLIMATE_ZONES, province);
 }
 
 export function getClimateData(zone) {
@@ -128,6 +131,7 @@ export function getClimateData(zone) {
 
 export function getClimateDataForProvince(province) {
   const zone = getClimateZone(province);
+  if (!zone) return null;
   return getClimateData(zone);
 }
 
@@ -195,9 +199,9 @@ export function calculateDrainageRequirements(params) {
   const slope = 0.01;
 
   const pipeDiameter = Math.pow(
-    (peakRunoff * n * Math.pow(4, 5/3)) / (Math.PI * Math.sqrt(slope)),
-    3/8
-  ) * Math.pow(4/Math.PI, 3/8) * 1000;
+    (peakRunoff * n * Math.pow(4, 5 / 3)) / (Math.PI * Math.sqrt(slope)),
+    3 / 8
+  ) * Math.pow(4 / Math.PI, 3 / 8) * 1000;
 
   const standardSizes = [100, 150, 200, 225, 300, 375, 450, 525, 600, 750, 900, 1050, 1200];
   const pipeSize = standardSizes.find(s => s >= pipeDiameter) || standardSizes[standardSizes.length - 1];
