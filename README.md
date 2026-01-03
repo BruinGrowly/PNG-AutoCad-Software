@@ -1,11 +1,16 @@
 # PNG Civil Engineering CAD Software
 
-A browser-based Computer-Aided Design (CAD) software for Civil Engineering projects in Papua New Guinea. **Runs entirely in the browser - no installation required.**
+A browser-based Computer-Aided Design (CAD) software for Civil Engineering projects in Papua New Guinea.
 
 ## Quick Start
 
+### For End Users
+Once deployed, just open the application URL in any modern browser - no software installation needed on your computer.
+
+### For Developers
+
 ```bash
-# Install dependencies
+# Clone and install dependencies
 npm install
 
 # Start development server
@@ -15,15 +20,15 @@ npm run dev
 npm run build
 ```
 
-Then open `http://localhost:3000` in any modern browser.
+Then open `http://localhost:5173` in your browser.
 
 ## Key Features
 
-### Browser-Based - Works Anywhere
-- **No installation required** - runs in Chrome, Firefox, Safari, Edge
+### Browser-Based
+- **No desktop software required** - runs in Chrome, Firefox, Safari, Edge
 - **Works offline** - save projects locally in browser storage
 - **Cross-platform** - Windows, Mac, Linux, tablets
-- **Pure JavaScript** - no TypeScript compilation needed
+- **Pure JavaScript** - simple to deploy and modify
 
 ### PNG-Specific Design Considerations
 - **Climate Analysis**: Built-in tools for tropical climate design (high rainfall, humidity, cyclone zones)
