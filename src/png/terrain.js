@@ -255,7 +255,7 @@ export function delineateCatchment(terrain, outletPoint, options = {}) {
     // Find cells that flow into this cell
     const neighbors = [
       [-1, -1], [-1, 0], [-1, 1],
-      [0, -1],          [0, 1],
+      [0, -1], [0, 1],
       [1, -1], [1, 0], [1, 1],
     ];
     const inflowDirs = [4, 8, 16, 2, 32, 1, 128, 64]; // D8 codes for each neighbor flowing here
@@ -313,7 +313,7 @@ function calculateFlowDirection(grid) {
 
   const neighbors = [
     [-1, -1, 1], [-1, 0, 2], [-1, 1, 4],
-    [0, -1, 8],              [0, 1, 16],
+    [0, -1, 8], [0, 1, 16],
     [1, -1, 32], [1, 0, 64], [1, 1, 128],
   ];
 
@@ -342,7 +342,76 @@ function calculateFlowDirection(grid) {
 
 function calculateFlowAccumulation(flowDir, rows, cols) {
   const flowAcc = Array(rows).fill(null).map(() => Array(cols).fill(1));
-  // Simplified - full implementation would use topological sort
+
+  // Build dependency graph: for each cell, track which cells flow INTO it
+  // inflowCount[row][col] = number of cells that flow into this cell
+  const inflowCount = Array(rows).fill(null).map(() => Array(cols).fill(0));
+
+  // D8 flow direction codes and their offsets
+  const dirToOffset = {
+    1: [-1, -1],   // NW
+    2: [-1, 0],    // N
+    4: [-1, 1],    // NE
+    8: [0, -1],    // W
+    16: [0, 1],    // E
+    32: [1, -1],   // SW
+    64: [1, 0],    // S
+    128: [1, 1],   // SE
+  };
+
+  // Count inflows for each cell
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const dir = flowDir[row][col];
+      if (dir === 0) continue; // No outflow (sink or edge)
+
+      const offset = dirToOffset[dir];
+      if (offset) {
+        const targetRow = row + offset[0];
+        const targetCol = col + offset[1];
+        if (targetRow >= 0 && targetRow < rows && targetCol >= 0 && targetCol < cols) {
+          inflowCount[targetRow][targetCol]++;
+        }
+      }
+    }
+  }
+
+  // Create processing queue starting with cells that have no inflow (watershed boundaries)
+  // Using topological sort - process cells from highest to lowest
+  const queue = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (inflowCount[row][col] === 0) {
+        queue.push([row, col]);
+      }
+    }
+  }
+
+  // Process cells in topological order
+  while (queue.length > 0) {
+    const [row, col] = queue.shift();
+    const dir = flowDir[row][col];
+
+    if (dir === 0) continue; // No outflow
+
+    const offset = dirToOffset[dir];
+    if (offset) {
+      const targetRow = row + offset[0];
+      const targetCol = col + offset[1];
+
+      if (targetRow >= 0 && targetRow < rows && targetCol >= 0 && targetCol < cols) {
+        // Pass accumulated flow to downstream cell
+        flowAcc[targetRow][targetCol] += flowAcc[row][col];
+
+        // Decrease inflow count and add to queue if all inflows processed
+        inflowCount[targetRow][targetCol]--;
+        if (inflowCount[targetRow][targetCol] === 0) {
+          queue.push([targetRow, targetCol]);
+        }
+      }
+    }
+  }
+
   return flowAcc;
 }
 
@@ -523,10 +592,10 @@ function designTrapezoidalChannel(Q, n, vMax, vMin, slope) {
 
     // Calculate required slope using Manning's equation
     // V = (1/n) * R^(2/3) * S^(1/2)
-    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2/3)) ** 2;
+    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2 / 3)) ** 2;
 
     // Recalculate velocity
-    const V = (1 / n) * Math.pow(hydraulicRadius, 2/3) * Math.pow(requiredSlope, 0.5);
+    const V = (1 / n) * Math.pow(hydraulicRadius, 2 / 3) * Math.pow(requiredSlope, 0.5);
     const calculatedQ = area * V;
 
     if (Math.abs(calculatedQ - Q) / Q < 0.01) {
@@ -565,9 +634,9 @@ function designCircularPipe(Q, n, vMax, vMin, slope) {
     const hydraulicRadius = area / wettedPerimeter;
 
     const targetV = Math.min(vMax * 0.8, Math.max(vMin * 1.2, Q / area));
-    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2/3)) ** 2;
+    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2 / 3)) ** 2;
 
-    const V = (1 / n) * Math.pow(hydraulicRadius, 2/3) * Math.pow(requiredSlope, 0.5);
+    const V = (1 / n) * Math.pow(hydraulicRadius, 2 / 3) * Math.pow(requiredSlope, 0.5);
     const calculatedQ = area * V;
 
     if (Math.abs(calculatedQ - Q) / Q < 0.01) {
@@ -605,9 +674,9 @@ function designRectangularChannel(Q, n, vMax, vMin, slope) {
     const hydraulicRadius = area / wettedPerimeter;
 
     const targetV = Math.min(vMax * 0.8, Math.max(vMin * 1.2, Q / area));
-    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2/3)) ** 2;
+    const requiredSlope = slope || (targetV * n / Math.pow(hydraulicRadius, 2 / 3)) ** 2;
 
-    const V = (1 / n) * Math.pow(hydraulicRadius, 2/3) * Math.pow(requiredSlope, 0.5);
+    const V = (1 / n) * Math.pow(hydraulicRadius, 2 / 3) * Math.pow(requiredSlope, 0.5);
     const calculatedQ = area * V;
 
     if (Math.abs(calculatedQ - Q) / Q < 0.01) {

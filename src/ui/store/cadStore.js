@@ -56,13 +56,13 @@ export const useCADStore = create(
       addEntity: (entity) => set((state) => {
         if (!state.project) return state;
 
+        // Store pure data, not closures - prevents recursive command creation
         const command = {
           id: generateId(),
           type: 'add-entity',
           timestamp: new Date(),
-          data: entity,
-          undo: () => get().deleteEntity(entity.id),
-          redo: () => get().addEntity(entity),
+          entityId: entity.id,
+          entityData: JSON.parse(JSON.stringify(entity)), // Deep clone
         };
 
         return {
@@ -256,23 +256,82 @@ export const useCADStore = create(
         snapSettings: { ...state.snapSettings, enabled: !state.snapSettings.enabled },
       })),
 
-      // Undo/Redo
+      // Undo/Redo - applies changes directly without calling action functions
       undo: () => set((state) => {
-        if (state.undoIndex < 0) return state;
+        if (state.undoIndex < 0 || !state.project) return state;
 
         const command = state.commandHistory[state.undoIndex];
-        command.undo();
+        let newEntities = [...state.project.entities];
+        let newSelectedIds = [...state.selectedEntityIds];
 
-        return { undoIndex: state.undoIndex - 1 };
+        // Interpret command data and apply reverse operation
+        switch (command.type) {
+          case 'add-entity':
+            // Undo add = remove the entity
+            newEntities = newEntities.filter(e => e.id !== command.entityId);
+            newSelectedIds = newSelectedIds.filter(id => id !== command.entityId);
+            break;
+          case 'delete-entity':
+            // Undo delete = restore the entity
+            newEntities.push(command.entityData);
+            break;
+          case 'modify-entity':
+            // Undo modify = restore old state
+            newEntities = newEntities.map(e =>
+              e.id === command.entityId ? command.oldData : e
+            );
+            break;
+          default:
+            console.warn('Unknown command type:', command.type);
+        }
+
+        return {
+          project: {
+            ...state.project,
+            entities: newEntities,
+            modifiedAt: new Date(),
+          },
+          selectedEntityIds: newSelectedIds,
+          undoIndex: state.undoIndex - 1,
+          isModified: true,
+        };
       }),
 
       redo: () => set((state) => {
-        if (state.undoIndex >= state.commandHistory.length - 1) return state;
+        if (state.undoIndex >= state.commandHistory.length - 1 || !state.project) return state;
 
         const command = state.commandHistory[state.undoIndex + 1];
-        command.redo();
+        let newEntities = [...state.project.entities];
 
-        return { undoIndex: state.undoIndex + 1 };
+        // Interpret command data and re-apply operation
+        switch (command.type) {
+          case 'add-entity':
+            // Redo add = add the entity back
+            newEntities.push(command.entityData);
+            break;
+          case 'delete-entity':
+            // Redo delete = remove the entity again
+            newEntities = newEntities.filter(e => e.id !== command.entityId);
+            break;
+          case 'modify-entity':
+            // Redo modify = apply new state
+            newEntities = newEntities.map(e =>
+              e.id === command.entityId ? command.newData : e
+            );
+            break;
+          default:
+            console.warn('Unknown command type:', command.type);
+        }
+
+        return {
+          project: {
+            ...state.project,
+            entities: newEntities,
+            modifiedAt: new Date(),
+          },
+          undoIndex: state.undoIndex + 1,
+          isModified: true,
+        };
       }),
 
       canUndo: () => get().undoIndex >= 0,
