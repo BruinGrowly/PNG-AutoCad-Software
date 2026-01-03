@@ -7,7 +7,7 @@
 
 import { generateId } from '../core/engine.js';
 import { createChannelCrossSection, createPipeCrossSection, createCulvertCrossSection } from '../core/crossSection.js';
-import { getClimateDataForProvince, calculateDesignRainfallIntensity, calculateDrainageRequirements } from './climate.js';
+import { getClimateDataForProvince, calculateDesignRainfallIntensity } from './climate.js';
 
 // ============================================
 // Data Sources (Documented)
