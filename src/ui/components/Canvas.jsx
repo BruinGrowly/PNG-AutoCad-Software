@@ -5,7 +5,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useCADStore } from '../store/cadStore.js';
-import { screenToWorld, worldToScreen, snapToGrid } from '../../core/engine.js';
+import { screenToWorld, worldToScreen, snapToGrid, trimEntity, extendEntity } from '../../core/engine.js';
 import { distance, midpoint } from '../../core/geometry.js';
 import './Canvas.css';
 
@@ -15,6 +15,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [worldMousePos, setWorldMousePos] = useState({ x: 0, y: 0 });
+  const [cuttingEdge, setCuttingEdge] = useState(null);  // For trim/extend tools
 
   const {
     isDrawing,
@@ -29,6 +30,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
     cancelDrawing,
     setPreviewEntity,
     addEntity,
+    updateEntity,
     selectEntity,
     clearSelection,
     setZoom,
@@ -86,6 +88,88 @@ export function Canvas({ project, activeTool, activeLayerId }) {
       return point;
     },
     [snapSettings, gridSettings]
+  );
+
+  // Helper: distance from point to line segment
+  const distanceToLineSegment = (point, lineStart, lineEnd) => {
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+    const lengthSq = dx * dx + dy * dy;
+
+    if (lengthSq === 0) return distance(point, lineStart);
+
+    let t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / lengthSq;
+    t = Math.max(0, Math.min(1, t));
+
+    const projection = {
+      x: lineStart.x + t * dx,
+      y: lineStart.y + t * dy,
+    };
+
+    return distance(point, projection);
+  };
+
+  // Find entity at a given world point (for trim/extend/select)
+  const findEntityAtPoint = useCallback(
+    (point, threshold = 10) => {
+      if (!project?.entities) return null;
+
+      for (const entity of project.entities) {
+        if (!entity.visible) continue;
+
+        // Check based on entity type
+        switch (entity.type) {
+          case 'line': {
+            // Distance from point to line segment
+            const { startPoint, endPoint } = entity;
+            const lineDist = distanceToLineSegment(point, startPoint, endPoint);
+            if (lineDist < threshold) return entity;
+            break;
+          }
+          case 'circle': {
+            // Distance to circle perimeter
+            const distToCenter = distance(point, entity.center);
+            const distToPerimeter = Math.abs(distToCenter - entity.radius);
+            if (distToPerimeter < threshold) return entity;
+            break;
+          }
+          case 'polyline': {
+            // Check each segment
+            for (let i = 0; i < entity.points.length - 1; i++) {
+              const segDist = distanceToLineSegment(point, entity.points[i], entity.points[i + 1]);
+              if (segDist < threshold) return entity;
+            }
+            if (entity.closed && entity.points.length > 2) {
+              const closeDist = distanceToLineSegment(
+                point,
+                entity.points[entity.points.length - 1],
+                entity.points[0]
+              );
+              if (closeDist < threshold) return entity;
+            }
+            break;
+          }
+          case 'rectangle': {
+            // Check if near any edge
+            const { topLeft, width, height } = entity;
+            const corners = [
+              topLeft,
+              { x: topLeft.x + width, y: topLeft.y },
+              { x: topLeft.x + width, y: topLeft.y + height },
+              { x: topLeft.x, y: topLeft.y + height },
+            ];
+            for (let i = 0; i < 4; i++) {
+              const next = (i + 1) % 4;
+              const edgeDist = distanceToLineSegment(point, corners[i], corners[next]);
+              if (edgeDist < threshold) return entity;
+            }
+            break;
+          }
+        }
+      }
+      return null;
+    },
+    [project]
   );
 
   // Draw grid
@@ -357,6 +441,22 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           break;
         }
 
+        case 'polygon': {
+          // Polygon preview - same as polyline but shows closing line to first point
+          const firstPt = toScreen(currentPoints[0]);
+          ctx.moveTo(firstPt.x, firstPt.y);
+          for (let i = 1; i < currentPoints.length; i++) {
+            const point = toScreen(currentPoints[i]);
+            ctx.lineTo(point.x, point.y);
+          }
+          const endPt = toScreen(worldMousePos);
+          ctx.lineTo(endPt.x, endPt.y);
+          // Show closing line back to start (dashed to indicate pending)
+          ctx.setLineDash([3, 3]);
+          ctx.lineTo(firstPt.x, firstPt.y);
+          break;
+        }
+
         case 'circle': {
           const center = toScreen(currentPoints[0]);
           const radiusPoint = toScreen(worldMousePos);
@@ -430,6 +530,22 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           }
           break;
         }
+
+        case 'measure':
+        case 'dimension': {
+          // Show a line with distance text
+          const start = toScreen(currentPoints[0]);
+          const end = toScreen(worldMousePos);
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+          // Draw dimension text at midpoint
+          const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+          ctx.fillStyle = '#0066ff';
+          ctx.font = '12px Arial';
+          const dist = distance(currentPoints[0], worldMousePos);
+          ctx.fillText(dist.toFixed(1), mid.x + 5, mid.y - 5);
+          break;
+        }
       }
 
       ctx.stroke();
@@ -467,7 +583,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
     drawPreview(ctx);
 
     // Draw cursor crosshair for drawing tools
-    if (['line', 'polyline', 'circle', 'arc', 'rectangle', 'polygon'].includes(activeTool)) {
+    if (['line', 'polyline', 'circle', 'arc', 'rectangle', 'polygon', 'text', 'measure', 'dimension', 'offset', 'mirror', 'rotate', 'scale'].includes(activeTool)) {
       ctx.save();
       ctx.strokeStyle = '#666666';
       ctx.lineWidth = 0.5;
@@ -547,15 +663,133 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           break;
 
         case 'polyline':
+        case 'polygon':
           if (!isDrawing) {
             startDrawing(worldPos);
           } else {
             addDrawingPoint(worldPos);
           }
           break;
+
+        case 'text':
+          // Text is placed with a single click, then a prompt appears
+          if (!isDrawing) {
+            const textContent = prompt('Enter text:');
+            if (textContent && textContent.trim()) {
+              const textEntity = {
+                id: Math.random().toString(36).substring(2, 15),
+                type: 'text',
+                layerId: activeLayerId,
+                visible: true,
+                locked: false,
+                style: {
+                  strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
+                  strokeWidth: 1,
+                  opacity: 1,
+                  lineType: 'continuous',
+                },
+                position: worldPos,
+                content: textContent,
+                fontSize: 12,
+                fontFamily: 'Arial',
+                alignment: 'left',
+                rotation: 0,
+              };
+              addEntity(textEntity);
+            }
+          }
+          break;
+
+        case 'measure':
+        case 'dimension':
+          // Two-point measurement/dimension - click two points
+          if (!isDrawing) {
+            startDrawing(worldPos);
+          }
+          break;
+
+        case 'offset':
+        case 'mirror':
+        case 'rotate':
+        case 'scale':
+          // These tools work on selected entities
+          // If nothing selected, alert user
+          if (selectedEntityIds.length === 0) {
+            alert('Please select entities first, then use this tool.');
+          } else if (!isDrawing) {
+            // Start operation - first click is base point
+            startDrawing(worldPos);
+          }
+          break;
+
+        case 'trim':
+          // Trim workflow: first click = select cutting edge, second click = select entity to trim
+          {
+            const entity = findEntityAtPoint(worldPos);
+            if (!cuttingEdge) {
+              // First click - select cutting edge
+              if (entity) {
+                setCuttingEdge(entity);
+                alert(`Cutting edge selected: ${entity.type}. Now click on the entity to trim.`);
+              } else {
+                alert('Click on an entity to use as cutting edge.');
+              }
+            } else {
+              // Second click - trim the entity
+              if (entity && entity.id !== cuttingEdge.id) {
+                const trimmed = trimEntity(entity, cuttingEdge, worldPos);
+                if (trimmed) {
+                  // Update the entity with trimmed version
+                  updateEntity(entity.id, {
+                    startPoint: trimmed.startPoint,
+                    endPoint: trimmed.endPoint,
+                  });
+                  setCuttingEdge(null);  // Reset for next trim
+                } else {
+                  alert('Could not trim - no intersection found or entity type not supported.');
+                }
+              } else if (!entity) {
+                alert('Click on an entity to trim it.');
+              }
+            }
+          }
+          break;
+
+        case 'extend':
+          // Extend workflow: similar to trim
+          {
+            const entity = findEntityAtPoint(worldPos);
+            if (!cuttingEdge) {
+              // First click - select boundary edge
+              if (entity) {
+                setCuttingEdge(entity);
+                alert(`Boundary selected: ${entity.type}. Now click on the entity to extend.`);
+              } else {
+                alert('Click on an entity to use as boundary.');
+              }
+            } else {
+              // Second click - extend the entity
+              if (entity && entity.id !== cuttingEdge.id) {
+                const extended = extendEntity(entity, cuttingEdge, worldPos);
+                if (extended) {
+                  // Update the entity with extended version
+                  updateEntity(entity.id, {
+                    startPoint: extended.startPoint,
+                    endPoint: extended.endPoint,
+                  });
+                  setCuttingEdge(null);  // Reset for next extend
+                } else {
+                  alert('Could not extend - no intersection found or entity type not supported.');
+                }
+              } else if (!entity) {
+                alert('Click on an entity to extend it.');
+              }
+            }
+          }
+          break;
       }
     },
-    [activeTool, worldMousePos, isDrawing, startDrawing, addDrawingPoint, clearSelection]
+    [activeTool, worldMousePos, isDrawing, startDrawing, addDrawingPoint, clearSelection, selectedEntityIds, activeLayerId, project, addEntity, cuttingEdge, findEntityAtPoint, updateEntity]
   );
 
   const handleMouseUp = useCallback(
@@ -689,6 +923,176 @@ export function Canvas({ project, activeTool, activeLayerId }) {
             finishDrawing();
           }
           break;
+
+        case 'measure':
+          // Show distance measurement
+          if (isDrawing && currentPoints.length > 0) {
+            const dist = distance(currentPoints[0], worldPos);
+            const dx = Math.abs(worldPos.x - currentPoints[0].x);
+            const dy = Math.abs(worldPos.y - currentPoints[0].y);
+            alert(`Distance: ${dist.toFixed(2)} units\nΔX: ${dx.toFixed(2)}\nΔY: ${dy.toFixed(2)}`);
+            finishDrawing();
+          }
+          break;
+
+        case 'dimension':
+          // Create a dimension entity
+          if (isDrawing && currentPoints.length > 0) {
+            const dist = distance(currentPoints[0], worldPos);
+            const dimensionEntity = {
+              id: Math.random().toString(36).substring(2, 15),
+              type: 'dimension',
+              layerId: activeLayerId,
+              visible: true,
+              locked: false,
+              style: {
+                strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
+                strokeWidth: 1,
+                opacity: 1,
+                lineType: 'continuous',
+              },
+              startPoint: currentPoints[0],
+              endPoint: worldPos,
+              text: dist.toFixed(2),
+              offset: 20,
+            };
+            addEntity(dimensionEntity);
+            finishDrawing();
+          }
+          break;
+
+        case 'offset':
+          // Offset selected entities by distance from base point to current
+          if (isDrawing && currentPoints.length > 0 && selectedEntityIds.length > 0) {
+            const offsetDist = prompt('Enter offset distance:', '100');
+            if (offsetDist && !isNaN(parseFloat(offsetDist))) {
+              const offsetValue = parseFloat(offsetDist);
+              selectedEntityIds.forEach((entityId) => {
+                const entity = project?.entities.find((e) => e.id === entityId);
+                if (entity) {
+                  const newEntity = JSON.parse(JSON.stringify(entity));
+                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  // Offset based on entity type
+                  if (newEntity.startPoint) newEntity.startPoint.y += offsetValue;
+                  if (newEntity.endPoint) newEntity.endPoint.y += offsetValue;
+                  if (newEntity.center) newEntity.center.y += offsetValue;
+                  if (newEntity.topLeft) newEntity.topLeft.y += offsetValue;
+                  if (newEntity.position) newEntity.position.y += offsetValue;
+                  if (newEntity.points) {
+                    newEntity.points = newEntity.points.map((p) => ({ x: p.x, y: p.y + offsetValue }));
+                  }
+                  addEntity(newEntity);
+                }
+              });
+            }
+            finishDrawing();
+          }
+          break;
+
+        case 'mirror':
+          // Mirror selected entities across a vertical line at clicked point
+          if (isDrawing && currentPoints.length > 0 && selectedEntityIds.length > 0) {
+            const mirrorX = worldPos.x;
+            selectedEntityIds.forEach((entityId) => {
+              const entity = project?.entities.find((e) => e.id === entityId);
+              if (entity) {
+                const newEntity = JSON.parse(JSON.stringify(entity));
+                newEntity.id = Math.random().toString(36).substring(2, 15);
+                // Mirror X coordinates around mirrorX
+                const mirrorPoint = (p) => ({ x: 2 * mirrorX - p.x, y: p.y });
+                if (newEntity.startPoint) newEntity.startPoint = mirrorPoint(newEntity.startPoint);
+                if (newEntity.endPoint) newEntity.endPoint = mirrorPoint(newEntity.endPoint);
+                if (newEntity.center) newEntity.center = mirrorPoint(newEntity.center);
+                if (newEntity.topLeft) {
+                  newEntity.topLeft = mirrorPoint({ x: newEntity.topLeft.x + newEntity.width, y: newEntity.topLeft.y });
+                  newEntity.topLeft.x -= newEntity.width;
+                }
+                if (newEntity.position) newEntity.position = mirrorPoint(newEntity.position);
+                if (newEntity.points) {
+                  newEntity.points = newEntity.points.map(mirrorPoint);
+                }
+                addEntity(newEntity);
+              }
+            });
+            finishDrawing();
+          }
+          break;
+
+        case 'rotate':
+          // Rotate selected entities around first clicked point
+          if (isDrawing && currentPoints.length > 0 && selectedEntityIds.length > 0) {
+            const angleStr = prompt('Enter rotation angle (degrees):', '90');
+            if (angleStr && !isNaN(parseFloat(angleStr))) {
+              const angleDeg = parseFloat(angleStr);
+              const angleRad = (angleDeg * Math.PI) / 180;
+              const pivot = currentPoints[0];
+              const rotatePoint = (p) => {
+                const dx = p.x - pivot.x;
+                const dy = p.y - pivot.y;
+                return {
+                  x: pivot.x + dx * Math.cos(angleRad) - dy * Math.sin(angleRad),
+                  y: pivot.y + dx * Math.sin(angleRad) + dy * Math.cos(angleRad),
+                };
+              };
+              selectedEntityIds.forEach((entityId) => {
+                const entity = project?.entities.find((e) => e.id === entityId);
+                if (entity) {
+                  const newEntity = JSON.parse(JSON.stringify(entity));
+                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  if (newEntity.startPoint) newEntity.startPoint = rotatePoint(newEntity.startPoint);
+                  if (newEntity.endPoint) newEntity.endPoint = rotatePoint(newEntity.endPoint);
+                  if (newEntity.center) newEntity.center = rotatePoint(newEntity.center);
+                  if (newEntity.topLeft) newEntity.topLeft = rotatePoint(newEntity.topLeft);
+                  if (newEntity.position) newEntity.position = rotatePoint(newEntity.position);
+                  if (newEntity.points) {
+                    newEntity.points = newEntity.points.map(rotatePoint);
+                  }
+                  if (newEntity.rotation !== undefined) {
+                    newEntity.rotation += angleRad;
+                  }
+                  addEntity(newEntity);
+                }
+              });
+            }
+            finishDrawing();
+          }
+          break;
+
+        case 'scale':
+          // Scale selected entities from first clicked point
+          if (isDrawing && currentPoints.length > 0 && selectedEntityIds.length > 0) {
+            const scaleStr = prompt('Enter scale factor:', '2');
+            if (scaleStr && !isNaN(parseFloat(scaleStr))) {
+              const scaleFactor = parseFloat(scaleStr);
+              const pivot = currentPoints[0];
+              const scalePoint = (p) => ({
+                x: pivot.x + (p.x - pivot.x) * scaleFactor,
+                y: pivot.y + (p.y - pivot.y) * scaleFactor,
+              });
+              selectedEntityIds.forEach((entityId) => {
+                const entity = project?.entities.find((e) => e.id === entityId);
+                if (entity) {
+                  const newEntity = JSON.parse(JSON.stringify(entity));
+                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  if (newEntity.startPoint) newEntity.startPoint = scalePoint(newEntity.startPoint);
+                  if (newEntity.endPoint) newEntity.endPoint = scalePoint(newEntity.endPoint);
+                  if (newEntity.center) newEntity.center = scalePoint(newEntity.center);
+                  if (newEntity.topLeft) newEntity.topLeft = scalePoint(newEntity.topLeft);
+                  if (newEntity.position) newEntity.position = scalePoint(newEntity.position);
+                  if (newEntity.points) {
+                    newEntity.points = newEntity.points.map(scalePoint);
+                  }
+                  if (newEntity.radius) newEntity.radius *= scaleFactor;
+                  if (newEntity.width) newEntity.width *= scaleFactor;
+                  if (newEntity.height) newEntity.height *= scaleFactor;
+                  if (newEntity.fontSize) newEntity.fontSize *= scaleFactor;
+                  addEntity(newEntity);
+                }
+              });
+            }
+            finishDrawing();
+          }
+          break;
       }
     },
     [
@@ -700,6 +1104,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
       project,
       addEntity,
       finishDrawing,
+      selectedEntityIds,
     ]
   );
 
@@ -721,6 +1126,25 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         closed: false,
       };
       addEntity(polylineEntity);
+      finishDrawing();
+    } else if (activeTool === 'polygon' && isDrawing && currentPoints.length >= 3) {
+      // Polygon creates a closed polyline
+      const polygonEntity = {
+        id: Math.random().toString(36).substring(2, 15),
+        type: 'polyline',  // Polygons are stored as closed polylines
+        layerId: activeLayerId,
+        visible: true,
+        locked: false,
+        style: {
+          strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
+          strokeWidth: 1,
+          opacity: 1,
+          lineType: 'continuous',
+        },
+        points: currentPoints,
+        closed: true,  // This makes it a closed polygon
+      };
+      addEntity(polygonEntity);
       finishDrawing();
     }
   }, [activeTool, isDrawing, currentPoints, activeLayerId, project, addEntity, finishDrawing]);
