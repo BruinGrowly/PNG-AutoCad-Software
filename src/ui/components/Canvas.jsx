@@ -371,6 +371,65 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           ctx.rect(start.x, start.y, end.x - start.x, end.y - start.y);
           break;
         }
+
+        case 'arc': {
+          // 3-point arc preview
+          if (currentPoints.length === 1) {
+            // Just show a line from first point to cursor
+            const start = toScreen(currentPoints[0]);
+            const end = toScreen(worldMousePos);
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+          } else if (currentPoints.length >= 2) {
+            // Show the arc through all three points
+            const p1 = currentPoints[0];
+            const p2 = currentPoints[1];
+            const p3 = worldMousePos;
+
+            // Calculate arc center using 3-point circle formula
+            const ax = p1.x, ay = p1.y;
+            const bx = p2.x, by = p2.y;
+            const cx = p3.x, cy = p3.y;
+
+            const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+
+            if (Math.abs(d) > 0.0001) {
+              const centerX = ((ax * ax + ay * ay) * (by - cy) +
+                (bx * bx + by * by) * (cy - ay) +
+                (cx * cx + cy * cy) * (ay - by)) / d;
+              const centerY = ((ax * ax + ay * ay) * (cx - bx) +
+                (bx * bx + by * by) * (ax - cx) +
+                (cx * cx + cy * cy) * (bx - ax)) / d;
+
+              const center = toScreen({ x: centerX, y: centerY });
+              const radius = distance(center, toScreen(p1));
+              const startAngle = Math.atan2(ay - centerY, ax - centerX);
+              const endAngle = Math.atan2(cy - centerY, cx - centerX);
+
+              // Determine if arc should go clockwise or counter-clockwise
+              const midAngle = Math.atan2(by - centerY, bx - centerX);
+              let counterClockwise = false;
+
+              // Check if mid-angle is between start and end going counter-clockwise
+              let angleDiff = (midAngle - startAngle + 2 * Math.PI) % (2 * Math.PI);
+              let totalDiff = (endAngle - startAngle + 2 * Math.PI) % (2 * Math.PI);
+              if (angleDiff > totalDiff) {
+                counterClockwise = true;
+              }
+
+              ctx.arc(center.x, center.y, radius, startAngle, endAngle, counterClockwise);
+            } else {
+              // Points are collinear, draw lines
+              const s1 = toScreen(p1);
+              const s2 = toScreen(p2);
+              const s3 = toScreen(p3);
+              ctx.moveTo(s1.x, s1.y);
+              ctx.lineTo(s2.x, s2.y);
+              ctx.lineTo(s3.x, s3.y);
+            }
+          }
+          break;
+        }
       }
 
       ctx.stroke();
@@ -408,7 +467,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
     drawPreview(ctx);
 
     // Draw cursor crosshair for drawing tools
-    if (['line', 'polyline', 'circle', 'rectangle', 'polygon'].includes(activeTool)) {
+    if (['line', 'polyline', 'circle', 'arc', 'rectangle', 'polygon'].includes(activeTool)) {
       ctx.save();
       ctx.strokeStyle = '#666666';
       ctx.lineWidth = 0.5;
@@ -475,6 +534,15 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         case 'rectangle':
           if (!isDrawing) {
             startDrawing(worldPos);
+          }
+          break;
+
+        case 'arc':
+          // Arc uses 3 points: start, through, end
+          if (!isDrawing) {
+            startDrawing(worldPos);
+          } else if (currentPoints.length < 2) {
+            addDrawingPoint(worldPos);
           }
           break;
 
@@ -569,6 +637,55 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               height,
             };
             addEntity(rectEntity);
+            finishDrawing();
+          }
+          break;
+
+        case 'arc':
+          // Arc creation on third point (first two points are collected in mouseDown)
+          if (isDrawing && currentPoints.length >= 2) {
+            const p1 = currentPoints[0];
+            const p2 = currentPoints[1];
+            const p3 = worldPos;
+
+            // Calculate arc center using 3-point circle formula
+            const ax = p1.x, ay = p1.y;
+            const bx = p2.x, by = p2.y;
+            const cx = p3.x, cy = p3.y;
+
+            const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+
+            if (Math.abs(d) > 0.0001) {
+              const centerX = ((ax * ax + ay * ay) * (by - cy) +
+                (bx * bx + by * by) * (cy - ay) +
+                (cx * cx + cy * cy) * (ay - by)) / d;
+              const centerY = ((ax * ax + ay * ay) * (cx - bx) +
+                (bx * bx + by * by) * (ax - cx) +
+                (cx * cx + cy * cy) * (bx - ax)) / d;
+
+              const radius = Math.sqrt((ax - centerX) ** 2 + (ay - centerY) ** 2);
+              const startAngle = Math.atan2(ay - centerY, ax - centerX);
+              const endAngle = Math.atan2(cy - centerY, cx - centerX);
+
+              const arcEntity = {
+                id: Math.random().toString(36).substring(2, 15),
+                type: 'arc',
+                layerId: activeLayerId,
+                visible: true,
+                locked: false,
+                style: {
+                  strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
+                  strokeWidth: 1,
+                  opacity: 1,
+                  lineType: 'continuous',
+                },
+                center: { x: centerX, y: centerY },
+                radius,
+                startAngle,
+                endAngle,
+              };
+              addEntity(arcEntity);
+            }
             finishDrawing();
           }
           break;
