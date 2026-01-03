@@ -532,100 +532,114 @@ STANDARD
 }
 
 function dimensionToDXF(entity, layerName, color) {
-  // Export as simple lines and text for compatibility
-  let dxf = '';
+  // Export as native DXF DIMENSION entity for full compatibility
 
-  // Dimension line
-  if (entity.dimLineStart && entity.dimLineEnd) {
-    dxf += `0
-LINE
+  // Determine dimension type
+  // 0 = Linear, 1 = Aligned, 2 = Angular, 3 = Diameter, 4 = Radius
+  let dimType = 0;
+  if (entity.dimensionType === 'aligned') dimType = 1;
+  else if (entity.dimensionType === 'angular') dimType = 2;
+  else if (entity.dimensionType === 'diameter') dimType = 3;
+  else if (entity.dimensionType === 'radius') dimType = 4;
+
+  // Get dimension points
+  const defPoint1 = entity.point1 || entity.startPoint || { x: 0, y: 0 };
+  const defPoint2 = entity.point2 || entity.endPoint || { x: 0, y: 0 };
+  const dimLinePoint = entity.dimLinePosition || entity.textPosition || {
+    x: (defPoint1.x + defPoint2.x) / 2,
+    y: (defPoint1.y + defPoint2.y) / 2 + 10,
+  };
+  const textPoint = entity.textPosition || dimLinePoint;
+  const textRotation = ((entity.textRotation || 0) * 180) / Math.PI;
+  const dimensionText = entity.displayText || entity.text || '<>';
+
+  let dxf = `0
+DIMENSION
 8
 ${layerName}
 62
 ${color}
-10
-${entity.dimLineStart.x}
+2
+*D0
+`;
+
+  // Definition point (dimension line location determining point)
+  dxf += `10
+${dimLinePoint.x}
 20
-${entity.dimLineStart.y}
+${dimLinePoint.y}
 30
 0.0
-11
-${entity.dimLineEnd.x}
+`;
+
+  // Text middle point
+  dxf += `11
+${textPoint.x}
 21
-${entity.dimLineEnd.y}
+${textPoint.y}
 31
 0.0
 `;
-  }
 
-  // Extension lines
-  if (entity.extLine1Start && entity.extLine1End) {
-    dxf += `0
-LINE
-8
-${layerName}
-62
-${color}
-10
-${entity.extLine1Start.x}
-20
-${entity.extLine1Start.y}
-30
-0.0
-11
-${entity.extLine1End.x}
-21
-${entity.extLine1End.y}
-31
-0.0
+  // Dimension type
+  dxf += `70
+${dimType}
+`;
+
+  // Dimension text (use '<>' for computed value)
+  dxf += `1
+${dimensionText}
+`;
+
+  // Text rotation
+  if (textRotation !== 0) {
+    dxf += `53
+${textRotation}
 `;
   }
 
-  if (entity.extLine2Start && entity.extLine2End) {
-    dxf += `0
-LINE
-8
-${layerName}
-62
-${color}
-10
-${entity.extLine2Start.x}
-20
-${entity.extLine2Start.y}
-30
-0.0
-11
-${entity.extLine2End.x}
-21
-${entity.extLine2End.y}
-31
+  // First definition point (extension line 1 origin)
+  dxf += `13
+${defPoint1.x}
+23
+${defPoint1.y}
+33
 0.0
 `;
-  }
 
-  // Dimension text
-  if (entity.textPosition && entity.displayText) {
-    const rotation = ((entity.textRotation || 0) * 180) / Math.PI;
-    dxf += `0
-TEXT
-8
-${layerName}
-62
-${color}
-10
-${entity.textPosition.x}
-20
-${entity.textPosition.y}
-30
+  // Second definition point (extension line 2 origin)
+  dxf += `14
+${defPoint2.x}
+24
+${defPoint2.y}
+34
 0.0
-40
-${entity.dimensionStyle?.textHeight || 2.5}
-1
-${entity.displayText}
-50
-${rotation}
-7
+`;
+
+  // Dimension style name
+  dxf += `3
 STANDARD
+`;
+
+  // For angular dimensions, add vertex point
+  if (dimType === 2 && entity.vertex) {
+    dxf += `15
+${entity.vertex.x}
+25
+${entity.vertex.y}
+35
+0.0
+`;
+  }
+
+  // For radius/diameter, add center point
+  if ((dimType === 3 || dimType === 4) && entity.center) {
+    dxf += `15
+${entity.center.x}
+25
+${entity.center.y}
+35
+0.0
 `;
   }
 

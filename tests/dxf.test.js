@@ -175,9 +175,9 @@ describe('DXF Export', () => {
 
       const dxf = exportToDXF(mockProject);
 
-      // Dimensions are exported as lines and text
-      expect(dxf).toContain('LINE');
-      expect(dxf).toContain('TEXT');
+      // Dimensions are now exported as native DXF DIMENSION entities
+      expect(dxf).toContain('DIMENSION');
+      expect(dxf).toContain('100.00'); // The dimension text
     });
 
     it('skips invisible entities', () => {
