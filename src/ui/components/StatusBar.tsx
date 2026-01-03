@@ -1,86 +1,142 @@
 /**
  * Status Bar Component
- * Bottom status bar showing current state
+ * Displays current state, coordinates, measurements, and quick toggles
  */
 
-import React from 'react';
-import type { DrawingTool } from '../../core/types';
+import React, { useState, useEffect } from 'react';
+import { formatLastSaveTime } from '../hooks/useAutoSave';
 import './StatusBar.css';
 
-interface StatusBarProps {
-  activeTool: DrawingTool;
-  selectedCount: number;
+export interface StatusBarProps {
+  // Coordinates
+  cursorPosition: { x: number; y: number } | null;
+  worldCoordinates: { x: number; y: number } | null;
+
+  // Current state
+  activeTool: string;
+  activeLayer: string;
   zoom: number;
-  isOffline: boolean;
-  projectName: string;
+  units: 'mm' | 'm' | 'ft' | 'in';
+
+  // Toggles
+  gridEnabled: boolean;
+  snapEnabled: boolean;
+  orthoEnabled: boolean;
+  onToggleGrid: () => void;
+  onToggleSnap: () => void;
+  onToggleOrtho: () => void;
+
+  // Measurements (while drawing)
+  measurement?: {
+    distance?: number;
+    angle?: number;
+    area?: number;
+  };
+
+  // Selection info
+  selectedCount: number;
+
+  // Save status
+  lastSaveTime: Date | null;
+  hasUnsavedChanges: boolean;
+  isSaving: boolean;
+
+  // Optional: PNG analysis status
+  analysisStatus?: {
+    province?: string;
+    seismicZone?: string;
+    climateZone?: string;
+  };
 }
 
-const TOOL_HINTS: Record<DrawingTool, string> = {
-  select: 'Click to select objects, drag to box select',
-  pan: 'Click and drag to pan the view',
-  zoom: 'Click to zoom in, right-click to zoom out',
-  line: 'Click start point, then click end point',
-  polyline: 'Click points, double-click or right-click to finish',
-  circle: 'Click center, then click to set radius',
-  arc: 'Click center, then start point, then end point',
-  rectangle: 'Click first corner, then opposite corner',
-  polygon: 'Click center, then click to set radius',
-  text: 'Click to place text',
-  dimension: 'Click first point, then second point, then text position',
-  hatch: 'Click inside closed boundary',
-  block: 'Click to place block',
-  measure: 'Click points to measure distance',
-  trim: 'Select cutting edges, then click objects to trim',
-  extend: 'Select boundary edges, then click objects to extend',
-  offset: 'Enter offset distance, select object, then click side',
-  mirror: 'Select objects, then define mirror line',
-  rotate: 'Select objects, then click center and rotation angle',
-  scale: 'Select objects, then click base point and scale factor',
-  array: 'Select objects, then define array parameters',
-};
-
 export function StatusBar({
+  cursorPosition,
+  worldCoordinates,
   activeTool,
-  selectedCount,
+  activeLayer,
   zoom,
-  isOffline,
-  projectName,
+  units,
+  gridEnabled,
+  snapEnabled,
+  orthoEnabled,
+  onToggleGrid,
+  onToggleSnap,
+  onToggleOrtho,
+  measurement,
+  selectedCount,
+  lastSaveTime,
+  hasUnsavedChanges,
+  isSaving,
+  analysisStatus,
 }: StatusBarProps) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatCoordinate = (value: number): string => {
+    switch (units) {
+      case 'mm': return `${(value * 1000).toFixed(0)}`;
+      case 'm': return value.toFixed(3);
+      case 'ft': return (value * 3.28084).toFixed(3);
+      case 'in': return (value * 39.3701).toFixed(2);
+      default: return value.toFixed(3);
+    }
+  };
+
+  const formatDistance = (value: number): string => `${formatCoordinate(value)} ${units}`;
+  const formatAngle = (degrees: number): string => `${degrees.toFixed(1)}°`;
+
+  const toolDisplayNames: Record<string, string> = {
+    select: 'Select', line: 'Line', polyline: 'Polyline', rectangle: 'Rectangle',
+    circle: 'Circle', arc: 'Arc', text: 'Text', dimension: 'Dimension', measure: 'Measure',
+  };
+
   return (
     <div className="status-bar">
-      <div className="status-left">
-        <span className="tool-name">
-          {activeTool.charAt(0).toUpperCase() + activeTool.slice(1)}
-        </span>
-        <span className="tool-hint">{TOOL_HINTS[activeTool]}</span>
-      </div>
-
-      <div className="status-center">
-        {selectedCount > 0 && (
-          <span className="selection-count">
-            {selectedCount} object{selectedCount !== 1 ? 's' : ''} selected
-          </span>
+      <div className="status-bar-section status-bar-left">
+        <div className="status-item coordinates">
+          <span className="status-label">X:</span>
+          <span className="status-value">{worldCoordinates ? formatCoordinate(worldCoordinates.x) : '---'}</span>
+          <span className="status-label">Y:</span>
+          <span className="status-value">{worldCoordinates ? formatCoordinate(worldCoordinates.y) : '---'}</span>
+        </div>
+        {measurement && (
+          <div className="status-item measurement">
+            {measurement.distance !== undefined && (
+              <><span className="status-label">Dist:</span><span className="status-value highlight">{formatDistance(measurement.distance)}</span></>
+            )}
+            {measurement.angle !== undefined && (
+              <><span className="status-label">Angle:</span><span className="status-value highlight">{formatAngle(measurement.angle)}</span></>
+            )}
+          </div>
         )}
       </div>
-
-      <div className="status-right">
-        <span className="zoom-level">{Math.round(zoom * 100)}%</span>
-
-        <span className="snap-status">
-          <span title="Grid">G</span>
-          <span title="Snap">S</span>
-          <span title="Ortho">O</span>
-        </span>
-
-        {isOffline && (
-          <span className="offline-status" title="Working offline - changes saved locally">
-            Offline
-          </span>
+      <div className="status-bar-section status-bar-center">
+        <div className="status-item"><span className="status-label">Tool:</span><span className="status-value">{toolDisplayNames[activeTool] || activeTool}</span></div>
+        <div className="status-item"><span className="status-label">Layer:</span><span className="status-value">{activeLayer}</span></div>
+        {selectedCount > 0 && <div className="status-item"><span className="status-value highlight">{selectedCount} selected</span></div>}
+        {analysisStatus?.province && (
+          <div className="status-item png-status">
+            <span className="status-label">Province:</span><span className="status-value">{analysisStatus.province}</span>
+            {analysisStatus.seismicZone && <span className="status-badge seismic">{analysisStatus.seismicZone}</span>}
+          </div>
         )}
-
-        <span className="project-name" title={projectName}>
-          {projectName}
-        </span>
+      </div>
+      <div className="status-bar-section status-bar-right">
+        <div className="status-toggles">
+          <button className={`status-toggle ${gridEnabled ? 'active' : ''}`} onClick={onToggleGrid} title="Toggle Grid (G)">GRID</button>
+          <button className={`status-toggle ${snapEnabled ? 'active' : ''}`} onClick={onToggleSnap} title="Toggle Snap (S)">SNAP</button>
+          <button className={`status-toggle ${orthoEnabled ? 'active' : ''}`} onClick={onToggleOrtho} title="Toggle Ortho (O)">ORTHO</button>
+        </div>
+        <div className="status-item zoom-level"><span className="status-value">{Math.round(zoom * 100)}%</span></div>
+        <div className={`status-item save-status ${hasUnsavedChanges ? 'unsaved' : 'saved'}`}>
+          {isSaving ? <span className="status-value saving">Saving...</span>
+            : hasUnsavedChanges ? <span className="status-value unsaved-indicator">● Unsaved</span>
+            : <span className="status-value saved-time">{formatLastSaveTime(lastSaveTime)}</span>}
+        </div>
       </div>
     </div>
   );
