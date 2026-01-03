@@ -5,8 +5,8 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useCADStore } from '../store/cadStore.js';
-import { screenToWorld, worldToScreen } from '../../core/engine.js';
-import { distance, midpoint, snapToGrid } from '../../core/geometry.js';
+import { screenToWorld, worldToScreen, snapToGrid } from '../../core/engine.js';
+import { distance, midpoint } from '../../core/geometry.js';
 import './Canvas.css';
 
 export function Canvas({ project, activeTool, activeLayerId }) {

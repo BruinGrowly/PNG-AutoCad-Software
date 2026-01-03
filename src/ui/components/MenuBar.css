@@ -147,3 +147,136 @@
   inset: 0;
   z-index: 999;
 }
+
+/* Help Dialog Styles */
+.help-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.help-dialog {
+  position: relative;
+  background: var(--panel-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 600px;
+  max-height: 80vh;
+  width: 90%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.help-dialog-close:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.help-dialog h2 {
+  padding: 20px 24px 16px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.help-content {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.help-content h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: var(--primary-color);
+}
+
+.help-content h3:first-child {
+  margin-top: 0;
+}
+
+.help-content p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.help-content ul,
+.help-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.help-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.help-content th,
+.help-content td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.help-content th {
+  background: var(--bg-color);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.help-content kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.shortcuts-table table {
+  margin-bottom: 16px;
+}
+
+.about-content .version {
+  font-size: 16px;
+  color: var(--primary-color);
+}
+
+.about-content .license {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
