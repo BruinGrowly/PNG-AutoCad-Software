@@ -4,17 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import type { Project } from '../../core/types';
-import { useCADStore } from '../store/cadStore';
+import { useCADStore } from '../store/cadStore.js';
 import './MenuBar.css';
-
-interface MenuBarProps {
-  project: Project | null;
-  onNewProject: () => void;
-  onSave: () => void;
-  onTogglePNGPanel: () => void;
-  isOffline: boolean;
-}
 
 export function MenuBar({
   project,
@@ -22,8 +13,8 @@ export function MenuBar({
   onSave,
   onTogglePNGPanel,
   isOffline,
-}: MenuBarProps) {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+}) {
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const {
     canUndo,
@@ -43,11 +34,11 @@ export function MenuBar({
     setZoom,
   } = useCADStore();
 
-  const handleMenuClick = (menu: string) => {
+  const handleMenuClick = (menu) => {
     setActiveMenu(activeMenu === menu ? null : menu);
   };
 
-  const handleMenuItemClick = (action: () => void) => {
+  const handleMenuItemClick = (action) => {
     action();
     setActiveMenu(null);
   };

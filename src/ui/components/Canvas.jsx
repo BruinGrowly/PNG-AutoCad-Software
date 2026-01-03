@@ -1,31 +1,20 @@
 /**
  * CAD Canvas Component
- * Main drawing canvas using HTML5 Canvas / Fabric.js
+ * Main drawing canvas using HTML5 Canvas
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import type { Project, DrawingTool, Point2D, Entity } from '../../core/types';
-import { useCADStore } from '../store/cadStore';
-import { screenToWorld, worldToScreen } from '../../core/engine';
-import {
-  distance,
-  midpoint,
-  snapToGrid,
-} from '../../core/geometry';
+import { useCADStore } from '../store/cadStore.js';
+import { screenToWorld, worldToScreen } from '../../core/engine.js';
+import { distance, midpoint, snapToGrid } from '../../core/geometry.js';
 import './Canvas.css';
 
-interface CanvasProps {
-  project: Project | null;
-  activeTool: DrawingTool;
-  activeLayerId: string;
-}
-
-export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+export function Canvas({ project, activeTool, activeLayerId }) {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-  const [mousePos, setMousePos] = useState<Point2D>({ x: 0, y: 0 });
-  const [worldMousePos, setWorldMousePos] = useState<Point2D>({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [worldMousePos, setWorldMousePos] = useState({ x: 0, y: 0 });
 
   const {
     isDrawing,
@@ -71,30 +60,28 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
   // Convert screen to world coordinates
   const toWorld = useCallback(
-    (screenPoint: Point2D): Point2D => {
-      return screenToWorld(screenPoint, viewport as any, canvasSize);
+    (screenPoint) => {
+      return screenToWorld(screenPoint, viewport, canvasSize);
     },
     [viewport, canvasSize]
   );
 
   // Convert world to screen coordinates
   const toScreen = useCallback(
-    (worldPoint: Point2D): Point2D => {
-      return worldToScreen(worldPoint, viewport as any, canvasSize);
+    (worldPoint) => {
+      return worldToScreen(worldPoint, viewport, canvasSize);
     },
     [viewport, canvasSize]
   );
 
   // Apply snapping
   const applySnap = useCallback(
-    (point: Point2D): Point2D => {
+    (point) => {
       if (!snapSettings.enabled) return point;
 
       if (snapSettings.gridSnap && gridSettings.visible) {
         return snapToGrid(point, gridSettings.spacing);
       }
-
-      // TODO: Add entity snap points
 
       return point;
     },
@@ -103,13 +90,12 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
   // Draw grid
   const drawGrid = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
+    (ctx) => {
       if (!gridSettings.visible) return;
 
       const spacing = gridSettings.spacing * viewport.zoom;
       const majorSpacing = spacing * gridSettings.majorLineEvery;
 
-      // Calculate grid bounds
       const startX = (canvasSize.width / 2 + viewport.pan.x) % spacing;
       const startY = (canvasSize.height / 2 + viewport.pan.y) % spacing;
 
@@ -171,7 +157,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
   // Draw entity
   const drawEntity = useCallback(
-    (ctx: CanvasRenderingContext2D, entity: Entity, isSelected: boolean) => {
+    (ctx, entity, isSelected) => {
       if (!entity.visible) return;
 
       const layer = project?.layers.find((l) => l.id === entity.layerId);
@@ -179,7 +165,6 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
       ctx.save();
 
-      // Apply style
       ctx.strokeStyle = isSelected ? '#0066ff' : entity.style.strokeColor;
       ctx.lineWidth = entity.style.strokeWidth * viewport.zoom;
       ctx.globalAlpha = entity.style.opacity;
@@ -188,7 +173,6 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
         ctx.fillStyle = entity.style.fillColor;
       }
 
-      // Apply line type
       switch (entity.style.lineType) {
         case 'dashed':
           ctx.setLineDash([10 * viewport.zoom, 5 * viewport.zoom]);
@@ -285,11 +269,8 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
           ctx.restore();
           break;
         }
-
-        // Add more entity types as needed
       }
 
-      // Draw selection handles
       if (isSelected) {
         drawSelectionHandles(ctx, entity);
       }
@@ -300,11 +281,11 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
   );
 
   // Draw selection handles
-  const drawSelectionHandles = (ctx: CanvasRenderingContext2D, entity: Entity) => {
+  const drawSelectionHandles = (ctx, entity) => {
     ctx.fillStyle = '#0066ff';
     const handleSize = 6;
 
-    const drawHandle = (point: Point2D) => {
+    const drawHandle = (point) => {
       const screenPoint = toScreen(point);
       ctx.fillRect(
         screenPoint.x - handleSize / 2,
@@ -335,14 +316,12 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
         drawHandle({ x: entity.topLeft.x + entity.width, y: entity.topLeft.y + entity.height });
         drawHandle({ x: entity.topLeft.x, y: entity.topLeft.y + entity.height });
         break;
-
-      // Add more cases
     }
   };
 
   // Draw preview
   const drawPreview = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
+    (ctx) => {
       if (!isDrawing || currentPoints.length === 0) return;
 
       ctx.save();
@@ -408,16 +387,12 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
-    // Draw grid
     drawGrid(ctx);
 
-    // Draw entities
     if (project) {
-      // Sort entities by layer order
       const sortedEntities = [...project.entities].sort((a, b) => {
         const layerA = project.layers.find((l) => l.id === a.layerId);
         const layerB = project.layers.find((l) => l.id === b.layerId);
@@ -430,7 +405,6 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
       }
     }
 
-    // Draw preview
     drawPreview(ctx);
 
     // Draw cursor crosshair for drawing tools
@@ -466,7 +440,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
   // Mouse event handlers
   const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e) => {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -483,20 +457,17 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
   );
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (e.button !== 0) return; // Left click only
+    (e) => {
+      if (e.button !== 0) return;
 
       const worldPos = worldMousePos;
 
       switch (activeTool) {
         case 'select':
-          // Find entity under cursor
-          // TODO: Implement proper hit testing
           clearSelection();
           break;
 
         case 'pan':
-          // Start panning
           break;
 
         case 'line':
@@ -520,7 +491,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
   );
 
   const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e) => {
       if (e.button !== 0) return;
 
       const worldPos = worldMousePos;
@@ -530,7 +501,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
           if (isDrawing && currentPoints.length > 0) {
             const lineEntity = {
               id: Math.random().toString(36).substring(2, 15),
-              type: 'line' as const,
+              type: 'line',
               layerId: activeLayerId,
               visible: true,
               locked: false,
@@ -538,7 +509,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
                 strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
                 strokeWidth: 1,
                 opacity: 1,
-                lineType: 'continuous' as const,
+                lineType: 'continuous',
               },
               startPoint: currentPoints[0],
               endPoint: worldPos,
@@ -553,7 +524,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
             const radius = distance(currentPoints[0], worldPos);
             const circleEntity = {
               id: Math.random().toString(36).substring(2, 15),
-              type: 'circle' as const,
+              type: 'circle',
               layerId: activeLayerId,
               visible: true,
               locked: false,
@@ -561,7 +532,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
                 strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
                 strokeWidth: 1,
                 opacity: 1,
-                lineType: 'continuous' as const,
+                lineType: 'continuous',
               },
               center: currentPoints[0],
               radius,
@@ -583,7 +554,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
 
             const rectEntity = {
               id: Math.random().toString(36).substring(2, 15),
-              type: 'rectangle' as const,
+              type: 'rectangle',
               layerId: activeLayerId,
               visible: true,
               locked: false,
@@ -591,7 +562,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
                 strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
                 strokeWidth: 1,
                 opacity: 1,
-                lineType: 'continuous' as const,
+                lineType: 'continuous',
               },
               topLeft,
               width,
@@ -619,7 +590,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
     if (activeTool === 'polyline' && isDrawing && currentPoints.length >= 2) {
       const polylineEntity = {
         id: Math.random().toString(36).substring(2, 15),
-        type: 'polyline' as const,
+        type: 'polyline',
         layerId: activeLayerId,
         visible: true,
         locked: false,
@@ -627,7 +598,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
           strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
           strokeWidth: 1,
           opacity: 1,
-          lineType: 'continuous' as const,
+          lineType: 'continuous',
         },
         points: currentPoints,
         closed: false,
@@ -638,7 +609,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
   }, [activeTool, isDrawing, currentPoints, activeLayerId, project, addEntity, finishDrawing]);
 
   const handleWheel = useCallback(
-    (e: React.WheelEvent<HTMLCanvasElement>) => {
+    (e) => {
       e.preventDefault();
 
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -650,7 +621,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
     [viewport.zoom, setZoom]
   );
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (isDrawing) {
       cancelDrawing();
@@ -678,7 +649,7 @@ export function Canvas({ project, activeTool, activeLayerId }: CanvasProps) {
   );
 }
 
-function getCursor(tool: DrawingTool, isDrawing: boolean): string {
+function getCursor(tool, isDrawing) {
   switch (tool) {
     case 'select':
       return 'default';

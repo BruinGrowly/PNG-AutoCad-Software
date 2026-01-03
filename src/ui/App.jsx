@@ -3,17 +3,16 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Canvas } from './components/Canvas';
-import { Toolbar } from './components/Toolbar';
-import { LayerPanel } from './components/LayerPanel';
-import { PropertiesPanel } from './components/PropertiesPanel';
-import { PNGAnalysisPanel } from './components/PNGAnalysisPanel';
-import { ProjectDialog } from './components/ProjectDialog';
-import { MenuBar } from './components/MenuBar';
-import { StatusBar } from './components/StatusBar';
-import { useCADStore } from './store/cadStore';
-import { useOfflineStorage } from './hooks/useOfflineStorage';
-import type { Project, DrawingTool } from '../core/types';
+import { Canvas } from './components/Canvas.jsx';
+import { Toolbar } from './components/Toolbar.jsx';
+import { LayerPanel } from './components/LayerPanel.jsx';
+import { PropertiesPanel } from './components/PropertiesPanel.jsx';
+import { PNGAnalysisPanel } from './components/PNGAnalysisPanel.jsx';
+import { ProjectDialog } from './components/ProjectDialog.jsx';
+import { MenuBar } from './components/MenuBar.jsx';
+import { StatusBar } from './components/StatusBar.jsx';
+import { useCADStore } from './store/cadStore.js';
+import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import './styles/App.css';
 
 export function App() {
@@ -60,7 +59,7 @@ export function App() {
 
   // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e) => {
       // Ctrl/Cmd + key shortcuts
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
@@ -123,12 +122,12 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [project, saveProject, setActiveTool]);
 
-  const handleNewProject = useCallback((newProject: Project) => {
+  const handleNewProject = useCallback((newProject) => {
     setProject(newProject);
     setShowProjectDialog(false);
   }, [setProject]);
 
-  const handleOpenProject = useCallback(async (projectId: string) => {
+  const handleOpenProject = useCallback(async (projectId) => {
     const loadedProject = await loadProject(projectId);
     if (loadedProject) {
       setProject(loadedProject);
@@ -136,7 +135,7 @@ export function App() {
     }
   }, [loadProject, setProject]);
 
-  const handleToolChange = useCallback((tool: DrawingTool) => {
+  const handleToolChange = useCallback((tool) => {
     setActiveTool(tool);
   }, [setActiveTool]);
 

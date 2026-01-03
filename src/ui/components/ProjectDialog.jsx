@@ -4,17 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import type { Project, PNGProvince, PNGTerrainType, ProjectType } from '../../core/types';
-import { createNewProject } from '../../core/engine';
+import { createNewProject } from '../../core/engine.js';
 import './ProjectDialog.css';
 
-interface ProjectDialogProps {
-  onNewProject: (project: Project) => void;
-  onOpenProject: (projectId: string) => void;
-  recentProjects: { id: string; name: string; modifiedAt: Date }[];
-}
-
-const PNG_PROVINCES: PNGProvince[] = [
+const PNG_PROVINCES = [
   'Central',
   'East New Britain',
   'East Sepik',
@@ -39,7 +32,7 @@ const PNG_PROVINCES: PNGProvince[] = [
   'Autonomous Region of Bougainville',
 ];
 
-const TERRAIN_TYPES: { value: PNGTerrainType; label: string }[] = [
+const TERRAIN_TYPES = [
   { value: 'coastal-lowland', label: 'Coastal Lowland' },
   { value: 'riverine-floodplain', label: 'Riverine Floodplain' },
   { value: 'highland-valley', label: 'Highland Valley' },
@@ -48,7 +41,7 @@ const TERRAIN_TYPES: { value: PNGTerrainType; label: string }[] = [
   { value: 'swamp-wetland', label: 'Swamp/Wetland' },
 ];
 
-const PROJECT_TYPES: { value: ProjectType; label: string }[] = [
+const PROJECT_TYPES = [
   { value: 'building', label: 'Building' },
   { value: 'road', label: 'Road' },
   { value: 'bridge', label: 'Bridge' },
@@ -60,13 +53,13 @@ const PROJECT_TYPES: { value: ProjectType; label: string }[] = [
   { value: 'general', label: 'General' },
 ];
 
-export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }: ProjectDialogProps) {
-  const [activeTab, setActiveTab] = useState<'new' | 'open'>('new');
+export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
+  const [activeTab, setActiveTab] = useState('new');
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
-  const [province, setProvince] = useState<PNGProvince>('National Capital District');
-  const [terrainType, setTerrainType] = useState<PNGTerrainType>('coastal-lowland');
-  const [projectType, setProjectType] = useState<ProjectType>('building');
+  const [province, setProvince] = useState('National Capital District');
+  const [terrainType, setTerrainType] = useState('coastal-lowland');
+  const [projectType, setProjectType] = useState('building');
   const [author, setAuthor] = useState('');
 
   const handleCreateProject = () => {
@@ -155,7 +148,7 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }: P
                   <select
                     id="projectType"
                     value={projectType}
-                    onChange={(e) => setProjectType(e.target.value as ProjectType)}
+                    onChange={(e) => setProjectType(e.target.value)}
                   >
                     {PROJECT_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -174,7 +167,7 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }: P
                   <select
                     id="province"
                     value={province}
-                    onChange={(e) => setProvince(e.target.value as PNGProvince)}
+                    onChange={(e) => setProvince(e.target.value)}
                   >
                     {PNG_PROVINCES.map((prov) => (
                       <option key={prov} value={prov}>
@@ -189,7 +182,7 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }: P
                   <select
                     id="terrainType"
                     value={terrainType}
-                    onChange={(e) => setTerrainType(e.target.value as PNGTerrainType)}
+                    onChange={(e) => setTerrainType(e.target.value)}
                   >
                     {TERRAIN_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>

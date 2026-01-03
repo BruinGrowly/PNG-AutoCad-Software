@@ -4,23 +4,9 @@
  */
 
 import React from 'react';
-import type { DrawingTool } from '../../core/types';
 import './Toolbar.css';
 
-interface ToolbarProps {
-  activeTool: DrawingTool;
-  onToolChange: (tool: DrawingTool) => void;
-}
-
-interface ToolDefinition {
-  id: DrawingTool;
-  name: string;
-  icon: string;
-  shortcut: string;
-  group: 'navigation' | 'draw' | 'modify' | 'annotate';
-}
-
-const TOOLS: ToolDefinition[] = [
+const TOOLS = [
   // Navigation
   { id: 'select', name: 'Select', icon: '⬚', shortcut: 'V', group: 'navigation' },
   { id: 'pan', name: 'Pan', icon: '✋', shortcut: 'H', group: 'navigation' },
@@ -50,7 +36,7 @@ const TOOLS: ToolDefinition[] = [
   { id: 'hatch', name: 'Hatch', icon: '▤', shortcut: 'HA', group: 'annotate' },
 ];
 
-export function Toolbar({ activeTool, onToolChange }: ToolbarProps) {
+export function Toolbar({ activeTool, onToolChange }) {
   const groupedTools = {
     navigation: TOOLS.filter((t) => t.group === 'navigation'),
     draw: TOOLS.filter((t) => t.group === 'draw'),
@@ -125,13 +111,7 @@ export function Toolbar({ activeTool, onToolChange }: ToolbarProps) {
   );
 }
 
-interface ToolButtonProps {
-  tool: ToolDefinition;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-function ToolButton({ tool, isActive, onClick }: ToolButtonProps) {
+function ToolButton({ tool, isActive, onClick }) {
   return (
     <button
       className={`toolbar-button ${isActive ? 'active' : ''}`}

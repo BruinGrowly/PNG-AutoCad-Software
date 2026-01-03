@@ -4,30 +4,15 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { Project } from '../../core/types';
 
 const STORAGE_KEY = 'png-cad-projects';
 const RECENT_PROJECTS_KEY = 'png-cad-recent';
 const MAX_RECENT_PROJECTS = 10;
 
-interface StoredProject {
-  id: string;
-  name: string;
-  data: string; // JSON stringified project
-  savedAt: string;
-}
-
-interface RecentProject {
-  id: string;
-  name: string;
-  modifiedAt: Date;
-}
-
 export function useOfflineStorage() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Initialize storage
     initializeStorage();
     setIsReady(true);
   }, []);
@@ -41,11 +26,11 @@ export function useOfflineStorage() {
     }
   };
 
-  const saveProject = useCallback(async (project: Project): Promise<boolean> => {
+  const saveProject = useCallback(async (project) => {
     try {
       const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 
-      const storedProject: StoredProject = {
+      const storedProject = {
         id: project.id,
         name: project.name,
         data: JSON.stringify(project),
@@ -55,7 +40,6 @@ export function useOfflineStorage() {
       projects[project.id] = storedProject;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
 
-      // Update recent projects
       updateRecentProjects(project.id, project.name);
 
       console.log(`Project "${project.name}" saved successfully`);
@@ -66,17 +50,17 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const loadProject = useCallback(async (projectId: string): Promise<Project | null> => {
+  const loadProject = useCallback(async (projectId) => {
     try {
       const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      const storedProject = projects[projectId] as StoredProject | undefined;
+      const storedProject = projects[projectId];
 
       if (!storedProject) {
         console.error(`Project ${projectId} not found`);
         return null;
       }
 
-      const project = JSON.parse(storedProject.data) as Project;
+      const project = JSON.parse(storedProject.data);
 
       // Convert date strings back to Date objects
       project.createdAt = new Date(project.createdAt);
@@ -90,7 +74,7 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const deleteProject = useCallback(async (projectId: string): Promise<boolean> => {
+  const deleteProject = useCallback(async (projectId) => {
     try {
       const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 
@@ -101,7 +85,7 @@ export function useOfflineStorage() {
         // Remove from recent projects
         const recentProjects = JSON.parse(
           localStorage.getItem(RECENT_PROJECTS_KEY) || '[]'
-        ) as RecentProject[];
+        );
         const filtered = recentProjects.filter((p) => p.id !== projectId);
         localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(filtered));
 
@@ -115,11 +99,11 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const getRecentProjects = useCallback((): RecentProject[] => {
+  const getRecentProjects = useCallback(() => {
     try {
       const recentProjects = JSON.parse(
         localStorage.getItem(RECENT_PROJECTS_KEY) || '[]'
-      ) as RecentProject[];
+      );
 
       return recentProjects.map((p) => ({
         ...p,
@@ -131,7 +115,7 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const getAllProjects = useCallback((): StoredProject[] => {
+  const getAllProjects = useCallback(() => {
     try {
       const projects = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       return Object.values(projects);
@@ -141,15 +125,15 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const exportProject = useCallback(async (project: Project): Promise<Blob> => {
+  const exportProject = useCallback(async (project) => {
     const projectJson = JSON.stringify(project, null, 2);
     return new Blob([projectJson], { type: 'application/json' });
   }, []);
 
-  const importProject = useCallback(async (file: File): Promise<Project | null> => {
+  const importProject = useCallback(async (file) => {
     try {
       const text = await file.text();
-      const project = JSON.parse(text) as Project;
+      const project = JSON.parse(text);
 
       // Validate project structure
       if (!project.id || !project.name || !project.entities) {
@@ -173,7 +157,7 @@ export function useOfflineStorage() {
     }
   }, [saveProject]);
 
-  const getStorageUsage = useCallback((): { used: number; available: number } => {
+  const getStorageUsage = useCallback(() => {
     try {
       const data = localStorage.getItem(STORAGE_KEY) || '';
       const used = new Blob([data]).size;
@@ -186,7 +170,7 @@ export function useOfflineStorage() {
     }
   }, []);
 
-  const clearAllData = useCallback((): boolean => {
+  const clearAllData = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(RECENT_PROJECTS_KEY);
@@ -213,10 +197,10 @@ export function useOfflineStorage() {
 
 // Helper functions
 
-function updateRecentProjects(projectId: string, projectName: string) {
+function updateRecentProjects(projectId, projectName) {
   const recentProjects = JSON.parse(
     localStorage.getItem(RECENT_PROJECTS_KEY) || '[]'
-  ) as RecentProject[];
+  );
 
   // Remove if already exists
   const filtered = recentProjects.filter((p) => p.id !== projectId);
@@ -234,7 +218,7 @@ function updateRecentProjects(projectId: string, projectName: string) {
   localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(trimmed));
 }
 
-function generateId(): string {
+function generateId() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -243,7 +227,7 @@ function generateId(): string {
 }
 
 // IndexedDB for larger projects (optional enhancement)
-export async function initIndexedDB(): Promise<IDBDatabase | null> {
+export async function initIndexedDB() {
   return new Promise((resolve) => {
     if (!window.indexedDB) {
       console.log('IndexedDB not supported');
@@ -263,7 +247,7 @@ export async function initIndexedDB(): Promise<IDBDatabase | null> {
     };
 
     request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
+      const db = event.target.result;
 
       // Create object stores
       if (!db.objectStoreNames.contains('projects')) {
