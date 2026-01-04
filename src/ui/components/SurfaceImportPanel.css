@@ -1,0 +1,496 @@
+/**
+ * Surface Import Panel Styles
+ */
+
+.surface-import-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    backdrop-filter: blur(4px);
+}
+
+.surface-import-panel {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 520px;
+    max-height: 85vh;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: white;
+}
+
+.panel-header .close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.panel-header .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.panel-content {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Error Banner */
+.error-banner {
+    padding: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f9fafb;
+}
+
+.drop-zone:hover,
+.drop-zone.active {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.drop-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.drop-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.drop-text strong {
+    font-size: 16px;
+    color: #374151;
+}
+
+.drop-text span {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Format Help */
+.format-help {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+
+.format-help h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #374151;
+}
+
+.format-examples {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.format-examples code {
+    padding: 4px 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.format-help p {
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Sample Data */
+.sample-data {
+    margin-top: 16px;
+}
+
+.sample-data h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #374151;
+}
+
+.sample-data pre {
+    margin: 0;
+    padding: 12px;
+    background: #1f2937;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #e5e7eb;
+    font-family: monospace;
+    overflow-x: auto;
+}
+
+/* File Info */
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: #eff6ff;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.file-icon {
+    font-size: 24px;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #1e40af;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stat-card {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* Error List */
+.error-list {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #fef3c7;
+    border-radius: 8px;
+}
+
+.error-list h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #92400e;
+}
+
+.error-row {
+    font-size: 12px;
+    color: #78350f;
+    padding: 4px 0;
+}
+
+.error-more {
+    font-size: 12px;
+    color: #92400e;
+    font-style: italic;
+}
+
+/* Point Preview Table */
+.point-preview {
+    margin-bottom: 16px;
+}
+
+.point-preview h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #374151;
+}
+
+.point-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.point-preview th,
+.point-preview td {
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.point-preview th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.point-preview td {
+    font-family: monospace;
+    color: #1f2937;
+}
+
+.point-preview .more-row td {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    font-family: inherit;
+}
+
+/* Surface Stats */
+.surface-stats {
+    margin-bottom: 20px;
+}
+
+.surface-stats h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #059669;
+}
+
+/* Contour Options */
+.contour-options {
+    margin-bottom: 20px;
+}
+
+.contour-options h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #374151;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.option-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.option-row span {
+    color: #374151;
+    font-size: 14px;
+}
+
+.interval-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: #eff6ff;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.interval-option label {
+    font-size: 14px;
+    color: #374151;
+}
+
+.interval-option input {
+    width: 80px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.interval-option .unit {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-secondary,
+.btn-primary {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-secondary {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+}
+
+.btn-secondary:hover {
+    background: #f3f4f6;
+}
+
+.btn-primary {
+    background: #2563eb;
+    border: none;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.btn-primary:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* Complete Section */
+.complete-section {
+    text-align: center;
+    padding: 20px;
+}
+
+.success-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.complete-section h3 {
+    margin: 0 0 8px 0;
+    color: #059669;
+}
+
+.complete-section p {
+    color: #6b7280;
+    margin-bottom: 20px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .surface-import-panel {
+        background: #1f2937;
+    }
+
+    .panel-header {
+        border-bottom-color: #374151;
+    }
+
+    .drop-zone {
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.active {
+        background: #1e3a5f;
+        border-color: #3b82f6;
+    }
+
+    .drop-text strong {
+        color: #f3f4f6;
+    }
+
+    .format-help {
+        background: #374151;
+    }
+
+    .format-help h4,
+    .sample-data h4 {
+        color: #e5e7eb;
+    }
+
+    .format-examples code {
+        background: #4b5563;
+        color: #e5e7eb;
+    }
+
+    .stat-card {
+        background: #374151;
+    }
+
+    .stat-value {
+        color: #f3f4f6;
+    }
+
+    .point-preview th {
+        background: #374151;
+        color: #e5e7eb;
+    }
+
+    .point-preview td {
+        color: #f3f4f6;
+    }
+
+    .option-row {
+        background: #374151;
+    }
+
+    .option-row span {
+        color: #e5e7eb;
+    }
+
+    .interval-option {
+        background: #1e3a5f;
+    }
+
+    .interval-option input {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+    }
+}

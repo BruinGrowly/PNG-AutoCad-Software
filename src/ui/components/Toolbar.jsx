@@ -34,6 +34,9 @@ const TOOLS = [
   { id: 'dimension', name: 'Dimension', icon: '↔︎', shortcut: 'D', group: 'annotate' },
   { id: 'measure', name: 'Measure', icon: '📏', shortcut: 'M', group: 'annotate' },
   { id: 'hatch', name: 'Hatch', icon: '▤', shortcut: 'HA', group: 'annotate' },
+
+  // Surface (Civil 3D features)
+  { id: 'surface', name: 'Surface', icon: '🏔️', shortcut: 'SU', group: 'surface' },
 ];
 
 export function Toolbar({ activeTool, onToolChange }) {
@@ -42,6 +45,7 @@ export function Toolbar({ activeTool, onToolChange }) {
     draw: TOOLS.filter((t) => t.group === 'draw'),
     modify: TOOLS.filter((t) => t.group === 'modify'),
     annotate: TOOLS.filter((t) => t.group === 'annotate'),
+    surface: TOOLS.filter((t) => t.group === 'surface'),
   };
 
   return (
@@ -98,6 +102,22 @@ export function Toolbar({ activeTool, onToolChange }) {
         <div className="toolbar-section-title">Annotate</div>
         <div className="toolbar-buttons">
           {groupedTools.annotate.map((tool) => (
+            <ToolButton
+              key={tool.id}
+              tool={tool}
+              isActive={activeTool === tool.id}
+              onClick={() => onToolChange(tool.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="toolbar-divider" />
+
+      <div className="toolbar-section">
+        <div className="toolbar-section-title">Surface</div>
+        <div className="toolbar-buttons">
+          {groupedTools.surface.map((tool) => (
             <ToolButton
               key={tool.id}
               tool={tool}

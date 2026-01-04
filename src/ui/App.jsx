@@ -16,6 +16,7 @@ import { ProjectExplorer } from './components/ProjectExplorer.jsx';
 import { KeyboardHelp } from './components/KeyboardHelp.jsx';
 import { ContextMenu } from './components/ContextMenu.jsx';
 import { FeedbackForm } from './components/FeedbackForm.jsx';
+import { SurfaceImportPanel } from './components/SurfaceImportPanel.jsx';
 import { useCADStore } from './store/cadStore.js';
 import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import { exportToPDF } from '../core/pdfExport.js';
@@ -28,6 +29,7 @@ export function App() {
   const [showProjectExplorer, setShowProjectExplorer] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showSurfaceImport, setShowSurfaceImport] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -164,7 +166,12 @@ export function App() {
   }, [loadProject, setProject]);
 
   const handleToolChange = useCallback((tool) => {
-    setActiveTool(tool);
+    if (tool === 'surface') {
+      // Open surface import panel instead of setting tool
+      setShowSurfaceImport(true);
+    } else {
+      setActiveTool(tool);
+    }
   }, [setActiveTool]);
 
   const togglePNGPanel = useCallback(() => {
@@ -300,6 +307,30 @@ export function App() {
       {/* Feedback Form Overlay */}
       {showFeedbackForm && (
         <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
+      )}
+
+      {/* Surface Import Panel */}
+      {showSurfaceImport && (
+        <SurfaceImportPanel
+          onClose={() => setShowSurfaceImport(false)}
+          onSurfaceCreated={(surfaceData) => {
+            // Add surface entities to project
+            if (project && surfaceData.entities.length > 0) {
+              const updatedProject = {
+                ...project,
+                entities: [...(project.entities || []), ...surfaceData.entities],
+                layers: [
+                  ...(project.layers || []),
+                  ...surfaceData.layers.filter(newLayer =>
+                    !project.layers?.some(l => l.id === newLayer.id)
+                  ),
+                ],
+              };
+              setProject(updatedProject);
+            }
+            setShowSurfaceImport(false);
+          }}
+        />
       )}
     </div>
   );
