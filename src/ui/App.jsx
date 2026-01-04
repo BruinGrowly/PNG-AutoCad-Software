@@ -15,6 +15,7 @@ import { StatusBar } from './components/StatusBar.jsx';
 import { ProjectExplorer } from './components/ProjectExplorer.jsx';
 import { KeyboardHelp } from './components/KeyboardHelp.jsx';
 import { ContextMenu } from './components/ContextMenu.jsx';
+import { FeedbackForm } from './components/FeedbackForm.jsx';
 import { useCADStore } from './store/cadStore.js';
 import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import { exportToPDF } from '../core/pdfExport.js';
@@ -26,6 +27,7 @@ export function App() {
   const [showBuildingPanel, setShowBuildingPanel] = useState(false);
   const [showProjectExplorer, setShowProjectExplorer] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -287,11 +289,17 @@ export function App() {
         projectName={project?.name || 'Untitled'}
         onToggleExplorer={() => setShowProjectExplorer(prev => !prev)}
         onShowHelp={() => setShowKeyboardHelp(true)}
+        onShowFeedback={() => setShowFeedbackForm(true)}
       />
 
       {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
         <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />
+      )}
+
+      {/* Feedback Form Overlay */}
+      {showFeedbackForm && (
+        <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
       )}
     </div>
   );

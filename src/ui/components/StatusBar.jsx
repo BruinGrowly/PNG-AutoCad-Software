@@ -55,6 +55,7 @@ export function StatusBar({
   analysisStatus,
   onToggleExplorer,
   onShowHelp,
+  onShowFeedback,
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -132,6 +133,11 @@ export function StatusBar({
         {/* Help button */}
         <button className="status-help-btn" onClick={onShowHelp} title="Keyboard Shortcuts (?)">
           ?
+        </button>
+
+        {/* Feedback button */}
+        <button className="status-feedback-btn" onClick={onShowFeedback} title="Send Feedback / Report Bug">
+          📣
         </button>
 
         <div className={`status-item save-status ${hasUnsavedChanges ? 'unsaved' : 'saved'}`}>

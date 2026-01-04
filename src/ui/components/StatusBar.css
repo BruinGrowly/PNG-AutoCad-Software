@@ -180,6 +180,28 @@
   border-color: #3b82f6;
 }
 
+/* Feedback button */
+.status-feedback-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  margin-left: 4px;
+}
+
+.status-feedback-btn:hover {
+  background: #10b981;
+  border-color: #10b981;
+  transform: scale(1.1);
+}
+
 @keyframes pulse {
 
   0%,
