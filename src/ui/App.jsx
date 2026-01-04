@@ -12,6 +12,9 @@ import { BuildingParametersPanel } from './components/BuildingParametersPanel.js
 import { ProjectDialog } from './components/ProjectDialog.jsx';
 import { MenuBar } from './components/MenuBar.jsx';
 import { StatusBar } from './components/StatusBar.jsx';
+import { ProjectExplorer } from './components/ProjectExplorer.jsx';
+import { KeyboardHelp } from './components/KeyboardHelp.jsx';
+import { ContextMenu } from './components/ContextMenu.jsx';
 import { useCADStore } from './store/cadStore.js';
 import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import { exportToPDF } from '../core/pdfExport.js';
@@ -21,6 +24,9 @@ export function App() {
   const [showProjectDialog, setShowProjectDialog] = useState(true);
   const [showPNGPanel, setShowPNGPanel] = useState(false);
   const [showBuildingPanel, setShowBuildingPanel] = useState(false);
+  const [showProjectExplorer, setShowProjectExplorer] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const {
@@ -28,9 +34,15 @@ export function App() {
     activeTool,
     selectedEntityIds,
     activeLayerId,
+    clipboard,
     setProject,
     setActiveTool,
     setActiveLayer,
+    deleteSelectedEntities,
+    copy,
+    paste,
+    selectAll,
+    clearSelection,
   } = useCADStore();
 
   const { saveProject, loadProject, getRecentProjects } = useOfflineStorage();
@@ -116,6 +128,17 @@ export function App() {
             break;
           case 'z':
             setActiveTool('zoom');
+            break;
+          case 'a':
+            setActiveTool('arc');
+            break;
+          case 'e':
+            setShowProjectExplorer(prev => !prev);
+            break;
+          case '?':
+          case 'f1':
+            e.preventDefault();
+            setShowKeyboardHelp(true);
             break;
         }
       }
@@ -243,6 +266,13 @@ export function App() {
                 onInsertToDrawing={handleInsertBuildingEntities}
               />
             )}
+
+            {showProjectExplorer && (
+              <ProjectExplorer
+                project={project}
+                onClose={() => setShowProjectExplorer(false)}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -250,10 +280,19 @@ export function App() {
       <StatusBar
         activeTool={activeTool}
         selectedCount={selectedEntityIds.length}
+        entityCount={project?.entities?.length || 0}
+        layerCount={project?.layers?.length || 0}
         zoom={project?.viewports[0]?.zoom || 1}
         isOffline={isOffline}
         projectName={project?.name || 'Untitled'}
+        onToggleExplorer={() => setShowProjectExplorer(prev => !prev)}
+        onShowHelp={() => setShowKeyboardHelp(true)}
       />
+
+      {/* Keyboard Shortcuts Help Overlay */}
+      {showKeyboardHelp && (
+        <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />
+      )}
     </div>
   );
 }
