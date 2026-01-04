@@ -1,152 +1,113 @@
 # PNG Civil Engineering CAD Software
 
-A browser-based Computer-Aided Design (CAD) software for Civil Engineering projects in Papua New Guinea. Built with safety, local context, and longevity as core principles.
+<div align="center">
 
-## Quick Start
+**A free, browser-based CAD application for Civil Engineers in Papua New Guinea** 🇵🇬
 
-### For End Users
-Once deployed, just open the application URL in any modern browser - no software installation needed.
+[![Tests](https://img.shields.io/badge/tests-495%20passing-brightgreen)]()
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
 
-### For Developers
+</div>
+
+---
+
+## 🎯 What is This?
+
+PNG Civil CAD is a **free CAD tool** designed specifically for civil engineers working in Papua New Guinea. Unlike expensive commercial software, this is:
+
+- **Free** - No license fees, ever
+- **Browser-based** - Works on any computer with a web browser
+- **PNG-specific** - Built-in data for all 22 provinces
+
+### Who is it for?
+
+- Civil engineers in PNG
+- Drafters and technicians
+- Engineering students
+- Anyone doing construction design in PNG
+
+---
+
+## ✨ Key Features
+
+### CAD Tools (17 Total)
+| Drawing | Modify | Annotation |
+|---------|--------|------------|
+| Line | Trim | Text |
+| Circle | Extend | Dimension |
+| Rectangle | Offset | Measure |
+| Polyline | Mirror | Hatch |
+| Arc | Rotate | |
+| Polygon | Scale | |
+| | Array | |
+
+### PNG-Specific Features
+- **22 Provinces** - Seismic zones, climate data, flood risk for every province
+- **Structural Calculations** - Beam, column, footing sizing for PNG conditions
+- **Material Costs** - Prices in PNG Kina
+- **Construction Sequences** - Step-by-step builder guidance
+- **Design Validation** - Code compliance checking
+
+### Professional Features
+- **DXF Import/Export** - Works with AutoCAD files
+- **Project Explorer** - See all objects organized by layer
+- **Keyboard Shortcuts** - Press ? for full list
+- **Feedback System** - Built-in bug reporting
+
+---
+
+## 🚀 Quick Start
+
+### Requirements
+- Node.js 18+ ([Download here](https://nodejs.org/))
+- Git ([Download here](https://git-scm.com/))
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/BruinGrowly/PNG-AutoCad-Software.git
+
+# Go into the folder
+cd PNG-AutoCad-Software
+
+# Install dependencies
 npm install
+
+# Start the app
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Then open http://localhost:5173 in your browser.
 
-## Design Philosophy
+> 📖 **First time using Git?** See [docs/QUICK_START_GUIDE.md](docs/QUICK_START_GUIDE.md) for step-by-step instructions.
 
-This software embeds **engineering intelligence specific to PNG conditions**:
+---
 
-- **Safety First**: Modern 475-year return period seismic hazards, cyclone wind loads, flood resilience
-- **Context Focused**: Local materials, tropical climate, PNG Building Board standards
-- **Longevity**: Lifecycle cost analysis, durability in tropical conditions, maintenance planning
-- **Appropriate Standards**: Low-volume road design, not over-engineered solutions
+## 📚 Documentation
 
-## Key Capabilities
+| Document | Description |
+|----------|-------------|
+| [Quick Start Guide](docs/QUICK_START_GUIDE.md) | Installation & basic usage |
+| [User Manual](docs/USER_MANUAL.md) | Complete user guide (630+ lines) |
+| [Legal](LEGAL.md) | Disclaimers & liability |
+| [Data Sources](docs/DATA_SOURCES.md) | Where our data comes from |
 
-### Terrain & Drainage (Tropical)
-```javascript
-import { createTerrainModel, calculateDesignDischarge, designDrainageChannel } from './src/png/terrain.js';
+---
 
-// Create terrain from survey points
-const terrain = createTerrainModel(elevationPoints, { gridSpacing: 10 });
+## 🧪 Testing
 
-// Design drainage for tropical rainfall (PNG IDF curves built-in)
-const discharge = calculateDesignDischarge(catchment, {
-  region: 'coastal',      // coastal, highlands, islands, momase
-  returnPeriod: 25,       // years
-  landUse: 'village',
-});
-
-// Size the channel
-const channel = designDrainageChannel(discharge, {
-  channelType: 'trapezoidal',
-  material: 'earth',
-});
+```bash
+npm test           # Watch mode
+npm run test:run   # Single run
 ```
 
-### Road Design (Low-Volume Appropriate)
-```javascript
-import { createAlignment, assessRoadStandard, calculateGravelThickness } from './src/png/roads.js';
+**495 tests** covering all modules.
 
-// Assess appropriate road standard (not over-designed)
-const standard = assessRoadStandard({
-  estimatedADT: 150,
-  percentHeavyVehicles: 10,
-  terrain: 'rolling',
-  rainfallZone: 'high',
-});
-// Returns: district class, gravel surface, 40 km/h design speed
+---
 
-// Design horizontal alignment
-const alignment = createAlignment('Village Access Road', points, {
-  roadClass: 'district',
-  terrain: 'rolling',
-});
-
-// Calculate gravel pavement thickness
-const pavement = calculateGravelThickness({
-  designESA: 0.15,
-  subgradeStrength: 'medium',
-  rainfallZone: 'high',
-});
-```
-
-### Seismic Design (Modern Standards)
-```javascript
-import { getSeismicHazard475, calculateCombinedLoads } from './src/png/safety.js';
-
-// Get modern 475-year hazard (supersedes 1982 PNG code)
-const hazard = getSeismicHazard475('East New Britain');
-// Returns: Z = 0.55, nearFault: true
-
-// Combined seismic + wind analysis
-const loads = calculateCombinedLoads({
-  province: 'East New Britain',
-  buildingWeight: 2000,
-  buildingHeight: 12,
-  soilClass: 'C',
-  structuralSystem: 'concrete-frame',
-});
-// Returns: governing load case, design base shear, recommendations
-```
-
-### Wind/Cyclone Loading
-```javascript
-import { calculateWindLoads } from './src/png/safety.js';
-
-const wind = calculateWindLoads({
-  province: 'Manus',           // Region D - severe cyclonic
-  buildingWidth: 10,
-  buildingHeight: 8,
-  roofType: 'hip',
-  importanceCategory: 3,       // School
-});
-// Returns: design pressures, forces, cyclone-specific requirements
-```
-
-### Design Validation
-```javascript
-import { validateDesign, estimateLifecycleCost } from './src/png/safety.js';
-
-// Automated safety checks
-const validation = validateDesign({
-  province: 'Madang',
-  structuralSystem: 'masonry-unreinforced',  // Will flag as not permitted
-  soilClass: 'D',
-  floorLevel: 2.5,
-  floodLevel: 2.3,
-});
-// Returns: pass/fail, issues with code references, recommendations
-
-// Lifecycle cost (Pacific Quality Infrastructure principles)
-const lifecycle = estimateLifecycleCost({
-  constructionCost: 500000,
-  assetType: 'road',
-  designLife: 15,
-  province: 'Western',   // Remote - higher maintenance
-  quality: 'standard',
-});
-```
-
-### Foundation Design
-```javascript
-import { getFoundationDesign } from './src/png/safety.js';
-
-const foundation = getFoundationDesign({
-  province: 'Morobe',
-  soilClass: 'D',
-  numberOfStoreys: 2,
-  floodZone: true,
-  nearCoast: true,
-});
-// Returns: ranked foundation options, warnings, inspection points
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
@@ -154,77 +115,114 @@ src/
 │   ├── engine.js         # Project, layer, entity management
 │   ├── geometry.js       # Geometric calculations
 │   ├── dimensions.js     # Measurement and annotation
-│   ├── blocks.js         # Reusable symbols (doors, columns, PNG haus)
-│   ├── hatch.js          # Fill patterns (concrete, earth, gravel)
+│   ├── blocks.js         # Reusable symbols
 │   └── dxf.js            # AutoCAD DXF export/import
 │
 ├── png/                  # PNG Engineering Modules
-│   ├── climate.js        # Climate zones, design recommendations
-│   ├── seismic.js        # Seismic analysis (AS/NZS 1170.4)
+│   ├── provinces.js      # All 22 provinces
+│   ├── seismic.js        # Seismic analysis
+│   ├── climate.js        # Climate zones
 │   ├── flood.js          # Flood risk assessment
 │   ├── materials.js      # PNG materials database
 │   ├── structural.js     # Structural calculations
-│   ├── terrain.js        # Terrain modeling, drainage design
-│   ├── roads.js          # Road alignment, low-volume standards
-│   └── safety.js         # Wind loads, validation, lifecycle costs
+│   └── constructionSequence.js  # Builder guidance
+│
+└── ui/                   # User Interface (React)
+    ├── App.jsx           # Main application
+    ├── components/       # UI components
+    └── store/            # State management
 ```
 
-## PNG Data Coverage
+---
 
-### All 22 Provinces
-Seismic, wind, climate, and flood data for every province.
+## 🔧 Recent Changes (v2.0)
+
+### New Features
+- ✅ **17 CAD Tools** - All drawing and modify tools now working
+- ✅ **Project Explorer** - Press E to see all objects
+- ✅ **Keyboard Shortcuts** - Press ? for help overlay
+- ✅ **Context Menu** - Right-click for quick actions
+- ✅ **Feedback System** - Click 📣 to report bugs
+- ✅ **Construction Sequences** - Step-by-step builder guidance
+- ✅ **Enhanced Status Bar** - Entity count, quick toggles
+
+### PNG Data
+- ✅ All 22 provinces with seismic zones
+- ✅ Climate data (rainfall, temperature, cyclone risk)
+- ✅ Flood risk assessment
+- ✅ Material costs in Kina
+
+### Technical
+- ✅ 495 passing tests
+- ✅ DXF import/export
+- ✅ Offline capability
+- ✅ Auto-save
+
+---
+
+## 📊 PNG Data Coverage
 
 ### Seismic Hazard (475-year return period)
 
-| Region | Hazard Factor (Z) | Example Provinces |
-|--------|-------------------|-------------------|
-| Zone 4 | 0.45 - 0.55 | East New Britain, Madang, Morobe |
-| Zone 3 | 0.35 - 0.40 | Central, Milne Bay, Oro |
-| Zone 2 | 0.28 - 0.30 | Highlands provinces |
-| Zone 1 | 0.15 | Western |
+| Zone | Hazard Factor | Provinces |
+|------|---------------|-----------|
+| 4 | 0.45 - 0.55 | East New Britain, Madang, Morobe |
+| 3 | 0.35 - 0.40 | Central, Milne Bay, Oro |
+| 2 | 0.28 - 0.30 | Highlands provinces |
+| 1 | 0.15 | Western |
 
 ### Wind Regions
 
-| Region | Description | Design Speed (Cat 2) |
-|--------|-------------|---------------------|
+| Region | Description | Design Speed |
+|--------|-------------|--------------|
 | A | Non-cyclonic (Highlands) | 41 m/s |
 | B | Intermediate (South coast) | 50 m/s |
 | C | Cyclonic (North coast) | 60 m/s |
 | D | Severe cyclonic (Islands) | 67 m/s |
 
-### Road Classes
+---
 
-| Class | Traffic (ADT) | Design Speed | Surface |
-|-------|---------------|--------------|---------|
-| National | >1000 | 80 km/h | Sealed |
-| Provincial | 200-1000 | 60 km/h | Sealed |
-| District | 50-200 | 40 km/h | Gravel |
-| Access | 10-50 | 30 km/h | Gravel |
-| Track | <20 | 20 km/h | Earth |
+## ⚠️ Important Disclaimer
 
-## Standards Referenced
+> This software provides calculations as a **GUIDE ONLY**. All designs must be verified and certified by a licensed Professional Engineer before construction. See [LEGAL.md](LEGAL.md) for full details.
 
-- **AS/NZS 1170.4**: Earthquake actions
-- **AS/NZS 1170.2**: Wind actions
-- **AS 2870**: Residential slabs and footings
-- **AS 3600**: Concrete structures
-- **ASCE 24**: Flood resistant design
-- **ReCAP Rural Road Notes**: Low-volume road design
-- **Pacific Quality Infrastructure Principles**: Lifecycle approach
+---
 
-## Testing
+## 📣 Feedback & Support
 
-```bash
-npm test           # Watch mode
-npm run test:run   # Single run (CI)
-```
+Found a bug? Have a suggestion? 
 
-341 tests covering all modules.
+1. Click the **📣 button** in the app (bottom-right)
+2. Or email: **bruinnecessities@gmail.com**
 
-## Browser Support
+---
+
+## 📜 Standards Referenced
+
+- AS/NZS 1170.4 - Earthquake actions
+- AS/NZS 1170.2 - Wind actions
+- AS 2870 - Residential slabs and footings
+- AS 3600 - Concrete structures
+- ReCAP Rural Road Notes - Low-volume road design
+
+---
+
+## 🌐 Browser Support
 
 Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
-## License
+---
 
-MIT License
+## 📄 License
+
+MIT License - Free to use, modify, and distribute.
+
+---
+
+<div align="center">
+
+**Made with ❤️ for Papua New Guinea** 🇵🇬
+
+[GitHub](https://github.com/BruinGrowly/PNG-AutoCad-Software) • [Report Bug](mailto:bruinnecessities@gmail.com) • [Request Feature](mailto:bruinnecessities@gmail.com)
+
+</div>
