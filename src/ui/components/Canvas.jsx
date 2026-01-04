@@ -583,7 +583,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
     drawPreview(ctx);
 
     // Draw cursor crosshair for drawing tools
-    if (['line', 'polyline', 'circle', 'arc', 'rectangle', 'polygon', 'text', 'measure', 'dimension', 'offset', 'mirror', 'rotate', 'scale'].includes(activeTool)) {
+    if (['line', 'polyline', 'circle', 'arc', 'rectangle', 'polygon', 'text', 'measure', 'dimension', 'offset', 'mirror', 'rotate', 'scale', 'trim', 'extend', 'array', 'hatch'].includes(activeTool)) {
       ctx.save();
       ctx.strokeStyle = '#666666';
       ctx.lineWidth = 0.5;
@@ -784,6 +784,97 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               } else if (!entity) {
                 alert('Click on an entity to extend it.');
               }
+            }
+          }
+          break;
+
+        case 'array':
+          // Array creates multiple copies in a pattern
+          if (selectedEntityIds.length === 0) {
+            alert('Please select entities first, then use the Array tool.');
+          } else {
+            // Prompt for array parameters
+            const rowsStr = prompt('Number of rows:', '3');
+            const colsStr = prompt('Number of columns:', '3');
+            const rowSpacingStr = prompt('Row spacing (Y distance):', '50');
+            const colSpacingStr = prompt('Column spacing (X distance):', '50');
+
+            const rows = parseInt(rowsStr) || 1;
+            const cols = parseInt(colsStr) || 1;
+            const rowSpacing = parseFloat(rowSpacingStr) || 50;
+            const colSpacing = parseFloat(colSpacingStr) || 50;
+
+            // Create copies for each grid position
+            selectedEntityIds.forEach((entityId) => {
+              const entity = project?.entities.find((e) => e.id === entityId);
+              if (entity) {
+                for (let row = 0; row < rows; row++) {
+                  for (let col = 0; col < cols; col++) {
+                    // Skip the original position (0,0)
+                    if (row === 0 && col === 0) continue;
+
+                    const offsetX = col * colSpacing;
+                    const offsetY = row * rowSpacing;
+
+                    const newEntity = JSON.parse(JSON.stringify(entity));
+                    newEntity.id = Math.random().toString(36).substring(2, 15);
+
+                    // Offset based on entity type
+                    if (newEntity.startPoint) {
+                      newEntity.startPoint = { x: newEntity.startPoint.x + offsetX, y: newEntity.startPoint.y + offsetY };
+                    }
+                    if (newEntity.endPoint) {
+                      newEntity.endPoint = { x: newEntity.endPoint.x + offsetX, y: newEntity.endPoint.y + offsetY };
+                    }
+                    if (newEntity.center) {
+                      newEntity.center = { x: newEntity.center.x + offsetX, y: newEntity.center.y + offsetY };
+                    }
+                    if (newEntity.topLeft) {
+                      newEntity.topLeft = { x: newEntity.topLeft.x + offsetX, y: newEntity.topLeft.y + offsetY };
+                    }
+                    if (newEntity.position) {
+                      newEntity.position = { x: newEntity.position.x + offsetX, y: newEntity.position.y + offsetY };
+                    }
+                    if (newEntity.points) {
+                      newEntity.points = newEntity.points.map((p) => ({ x: p.x + offsetX, y: p.y + offsetY }));
+                    }
+
+                    addEntity(newEntity);
+                  }
+                }
+              }
+            });
+          }
+          break;
+
+        case 'hatch':
+          // Simplified hatch - creates diagonal line pattern inside a clicked closed polyline
+          {
+            const entity = findEntityAtPoint(worldPos);
+            if (entity && (entity.type === 'polyline' || entity.type === 'rectangle') && (entity.closed || entity.type === 'rectangle')) {
+              // Create hatch entity
+              const hatchEntity = {
+                id: Math.random().toString(36).substring(2, 15),
+                type: 'hatch',
+                layerId: activeLayerId,
+                visible: true,
+                locked: false,
+                style: {
+                  strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
+                  strokeWidth: 0.5,
+                  opacity: 0.5,
+                  lineType: 'continuous',
+                },
+                boundaryId: entity.id,
+                pattern: 'diagonal',  // Could be 'diagonal', 'crosshatch', 'dots', etc.
+                spacing: 10,
+                angle: 45,
+              };
+              addEntity(hatchEntity);
+            } else if (entity) {
+              alert('Please click on a closed polyline or rectangle to fill with hatch pattern.');
+            } else {
+              alert('Click inside a closed shape to apply hatch pattern.');
             }
           }
           break;
