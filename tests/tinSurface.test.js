@@ -398,14 +398,14 @@ describe('contoursToEntities', () => {
 });
 
 describe('tinToEntities', () => {
-    it('should convert TIN to polygon entities', () => {
+    it('should convert TIN to polyline entities', () => {
         const tin = createTINSurface(hillSurveyPoints);
         const entities = tinToEntities(tin);
 
         expect(entities.length).toBe(tin.triangleCount);
 
         for (const entity of entities) {
-            expect(entity.type).toBe('polygon');
+            expect(entity.type).toBe('polyline');
             expect(entity.points).toHaveLength(3);
             expect(entity.metadata.entityType).toBe('tin-triangle');
         }

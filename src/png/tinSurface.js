@@ -551,10 +551,13 @@ export function contoursToEntities(contourData, options = {}) {
         type: 'polyline',
         points: contour.points.map(p => ({ x: p.x, y: p.y })),
         closed: false,
+        visible: true,
         layerId,
         style: {
             strokeColor: contour.isMajor ? majorColor : minorColor,
             strokeWidth: contour.isMajor ? majorLineWidth : minorLineWidth,
+            opacity: 1,
+            lineType: 'solid',
         },
         metadata: {
             elevation: contour.elevation,
@@ -569,7 +572,7 @@ export function contoursToEntities(contourData, options = {}) {
  * 
  * @param {Object} tinSurface - TIN surface
  * @param {Object} options - Conversion options
- * @returns {Array} Array of CAD polygon entities
+ * @returns {Array} Array of CAD polyline entities
  */
 export function tinToEntities(tinSurface, options = {}) {
     const {
@@ -583,14 +586,17 @@ export function tinToEntities(tinSurface, options = {}) {
 
     return tinSurface.triangles.map(triangle => ({
         id: `tin-${triangle.id}`,
-        type: 'polygon',
+        type: 'polyline',  // Use polyline which Canvas supports
         points: triangle.vertices.map(v => ({ x: v.x, y: v.y })),
         closed: true,
+        visible: true,
         layerId,
         style: {
             strokeColor: triangleColor,
             strokeWidth: triangleLineWidth,
-            fillColor: 'transparent',
+            fillColor: null,
+            opacity: 1,
+            lineType: 'solid',
         },
         metadata: {
             entityType: 'tin-triangle',

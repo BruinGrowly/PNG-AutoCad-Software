@@ -316,6 +316,18 @@ export function App() {
           onSurfaceCreated={(surfaceData) => {
             // Add surface entities to project
             if (project && surfaceData.entities.length > 0) {
+              // Calculate center of surface bounds
+              const bounds = surfaceData.bounds;
+              const centerX = (bounds.minX + bounds.maxX) / 2;
+              const centerY = (bounds.minY + bounds.maxY) / 2;
+
+              // Calculate zoom to fit (add some padding)
+              const width = bounds.maxX - bounds.minX;
+              const height = bounds.maxY - bounds.minY;
+              const maxDimension = Math.max(width, height);
+              const canvasSize = 800; // Approximate canvas size
+              const zoom = Math.min(canvasSize / (maxDimension * 1.2), 2); // Cap at 2x zoom
+
               const updatedProject = {
                 ...project,
                 entities: [...(project.entities || []), ...surfaceData.entities],
@@ -325,8 +337,21 @@ export function App() {
                     !project.layers?.some(l => l.id === newLayer.id)
                   ),
                 ],
+                // Update viewport to show the surface
+                viewports: [{
+                  ...(project.viewports?.[0] || {}),
+                  panX: centerX,
+                  panY: centerY,
+                  zoom: zoom,
+                }],
               };
               setProject(updatedProject);
+
+              // Alert user about the surface
+              alert(`Surface created!\n\n` +
+                `• ${surfaceData.entities.length} entities added\n` +
+                `• Center: (${centerX.toFixed(0)}, ${centerY.toFixed(0)})\n` +
+                `• Zoom adjusted to show surface`);
             }
             setShowSurfaceImport(false);
           }}
