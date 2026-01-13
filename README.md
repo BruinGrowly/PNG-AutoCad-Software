@@ -60,7 +60,7 @@ PNG Civil CAD is a **free CAD tool** designed specifically for civil engineers w
 ## 🚀 Quick Start
 
 ### Requirements
-- Node.js 18+ ([Download here](https://nodejs.org/))
+- Node.js 20+ ([Download here](https://nodejs.org/))
 - Git ([Download here](https://git-scm.com/))
 
 ### Installation

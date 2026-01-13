@@ -9,7 +9,7 @@
   
   # Node version to use
   [build.environment]
-    NODE_VERSION = "18.0.0"
+    NODE_VERSION = "20"
 
 # Redirect rules for single-page application
 [[redirects]]

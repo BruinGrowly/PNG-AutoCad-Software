@@ -6,7 +6,7 @@ This guide covers deploying the PNG Civil CAD application to **Netlify**.
 
 - A [Netlify account](https://app.netlify.com/signup) (free tier is sufficient)
 - GitHub repository access (or Git repository)
-- Node.js 18.0.0 or higher (for local testing)
+- Node.js 20.0.0 or higher (for local testing)
 
 ---
 
@@ -33,7 +33,7 @@ Netlify should auto-detect these settings from `netlify.toml`, but verify:
 | **Base directory** | (leave empty) |
 | **Build command** | `npm run build` |
 | **Publish directory** | `dist` |
-| **Node version** | `18.0.0` |
+| **Node version** | `20` |
 
 #### Step 3: Deploy
 
@@ -122,7 +122,7 @@ Backup redirect file for single-page application routing. This ensures all route
 
 ### `.nvmrc`
 
-Specifies Node.js version `18.0.0` for consistent builds.
+Specifies Node.js version `20` for consistent builds.
 
 ---
 
@@ -175,6 +175,15 @@ npm run build
 - Free tier has a 300-minute/month limit
 - Optimize dependencies
 - Consider upgrading Netlify plan
+
+### Node.js Version Error
+
+**Problem:** Build fails with `SyntaxError: The requested module does not provide an export named...`
+
+**Solution:** This means Node.js version is too old. Vite 6.x requires Node.js 20+.
+1. Verify `.nvmrc` contains `20`
+2. Verify `netlify.toml` has `NODE_VERSION = "20"`
+3. Redeploy after updating both files
 
 ---
 
