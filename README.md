@@ -8,6 +8,10 @@
 [![Version](https://img.shields.io/badge/version-2.0.0-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
+### 🌐 **[Launch PNG Civil CAD »](https://gilded-daffodil-c52a76.netlify.app/)**
+
+*No installation required • Works on any device • 100% free*
+
 </div>
 
 ---
@@ -57,13 +61,30 @@ PNG Civil CAD is a **free CAD tool** designed specifically for civil engineers w
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Get Started
 
-### Requirements
+### Option 1: Use Online (Recommended) 🌐
+
+**Just open the link and start designing — no installation needed!**
+
+### **➤ [https://gilded-daffodil-c52a76.netlify.app/](https://gilded-daffodil-c52a76.netlify.app/)**
+
+✅ Works on any device (Windows, Mac, Linux, tablets)  
+✅ No downloads or setup  
+✅ Always up-to-date  
+✅ 100% free
+
+---
+
+### Option 2: Run Locally (For Developers)
+
+If you want to modify the code or run it offline:
+
+**Requirements:**
 - Node.js 20+ ([Download here](https://nodejs.org/))
 - Git ([Download here](https://git-scm.com/))
 
-### Installation
+**Installation:**
 
 ```bash
 # Clone the repository
@@ -85,24 +106,11 @@ Then open http://localhost:5173 in your browser.
 
 ---
 
-## 🌐 Deployment
-
-### Deploy to Netlify
+### Option 3: Deploy Your Own Copy
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/BruinGrowly/PNG-AutoCad-Software)
 
-This project is configured for **one-click deployment** to Netlify:
-
-1. Click the "Deploy to Netlify" button above
-2. Connect your GitHub account
-3. Click "Deploy site"
-4. Your app will be live in minutes!
-
-**📖 Detailed Instructions:** See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
-- Step-by-step deployment guides
-- Manual CLI deployment
-- Custom domain setup
-- Troubleshooting tips
+Want your own deployment? Click the button above or see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 
 ---
 
@@ -245,6 +253,9 @@ MIT License - Free to use, modify, and distribute.
 
 **Made with ❤️ for Papua New Guinea** 🇵🇬
 
+### 🌐 **[Launch PNG Civil CAD](https://gilded-daffodil-c52a76.netlify.app/)**
+
 [GitHub](https://github.com/BruinGrowly/PNG-AutoCad-Software) • [Report Bug](mailto:bruinnecessities@gmail.com) • [Request Feature](mailto:bruinnecessities@gmail.com)
 
 </div>
+
