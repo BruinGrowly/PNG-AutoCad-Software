@@ -85,11 +85,33 @@ Then open http://localhost:5173 in your browser.
 
 ---
 
+## 🌐 Deployment
+
+### Deploy to Netlify
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/BruinGrowly/PNG-AutoCad-Software)
+
+This project is configured for **one-click deployment** to Netlify:
+
+1. Click the "Deploy to Netlify" button above
+2. Connect your GitHub account
+3. Click "Deploy site"
+4. Your app will be live in minutes!
+
+**📖 Detailed Instructions:** See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
+- Step-by-step deployment guides
+- Manual CLI deployment
+- Custom domain setup
+- Troubleshooting tips
+
+---
+
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
 | [Quick Start Guide](docs/QUICK_START_GUIDE.md) | Installation & basic usage |
+| [Deployment Guide](docs/DEPLOYMENT.md) | Deploy to Netlify |
 | [User Manual](docs/USER_MANUAL.md) | Complete user guide (630+ lines) |
 | [Legal](LEGAL.md) | Disclaimers & liability |
 | [Data Sources](docs/DATA_SOURCES.md) | Where our data comes from |
