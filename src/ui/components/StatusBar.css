@@ -1,209 +1,154 @@
 .status-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.4fr) minmax(260px, 1.3fr) minmax(280px, 1.3fr);
   align-items: center;
-  justify-content: space-between;
-  height: 28px;
-  background: #f3f4f6;
-  border-top: 1px solid #e5e7eb;
-  padding: 0 12px;
+  gap: 12px;
+  min-height: var(--statusbar-height);
+  margin: 0 14px 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color-strong);
+  background: linear-gradient(180deg, rgba(250, 254, 255, 0.96), rgba(236, 248, 253, 0.95));
+  box-shadow: var(--shadow-sm);
   font-size: 12px;
-  color: #4b5563;
+  color: #3f6279;
   user-select: none;
 }
 
 .status-bar-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .status-bar-left {
-  flex: 1;
+  justify-content: flex-start;
 }
 
 .status-bar-center {
-  flex: 2;
   justify-content: center;
 }
 
 .status-bar-right {
-  flex: 1;
   justify-content: flex-end;
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
+}
+
+.status-project {
+  max-width: 220px;
 }
 
 .status-label {
-  color: #6b7280;
-  font-size: 11px;
+  color: #67839a;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .status-value {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  color: #1f2937;
+  font-family: var(--font-mono);
+  color: #1f4f6c;
+  white-space: nowrap;
 }
 
 .status-value.highlight {
-  color: #2563eb;
-  font-weight: 500;
+  color: #127596;
+  font-weight: 700;
 }
 
 .coordinates {
-  min-width: 180px;
-}
-
-.coordinates .status-label {
-  width: 14px;
-}
-
-.coordinates .status-value {
-  min-width: 60px;
-  text-align: right;
+  border-radius: 10px;
+  border: 1px solid rgba(98, 152, 176, 0.25);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px 8px;
 }
 
 .measurement {
-  padding: 2px 8px;
-  background: #dbeafe;
-  border-radius: 4px;
-  gap: 8px;
-}
-
-.png-status {
-  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(67, 163, 137, 0.25);
+  background: rgba(185, 238, 223, 0.33);
+  padding: 5px 8px;
 }
 
 .status-badge {
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 10px;
-  font-weight: 600;
+  font-family: var(--font-mono);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .status-badge.seismic {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(222, 165, 88, 0.24);
+  color: #8f5a17;
+}
+
+.status-badge.offline {
+  background: rgba(236, 152, 73, 0.2);
+  color: #95531f;
 }
 
 .status-toggles {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
 .status-toggle {
-  padding: 2px 8px;
-  border: none;
-  background: transparent;
-  color: #9ca3af;
+  min-width: 52px;
+  padding: 6px 8px;
+  border-radius: 9px;
   font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.15s ease;
-}
-
-.status-toggle:hover {
-  background: #e5e7eb;
-  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .status-toggle.active {
-  background: #3b82f6;
-  color: white;
-}
-
-.status-toggle.active:hover {
-  background: #2563eb;
+  border-color: rgba(24, 141, 176, 0.88);
+  background: linear-gradient(150deg, rgba(18, 166, 196, 0.28), rgba(16, 127, 159, 0.35));
 }
 
 .zoom-level {
-  min-width: 50px;
+  min-width: 56px;
   justify-content: center;
 }
 
+.status-action-btn {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  border-radius: 9px;
+}
+
 .save-status {
-  min-width: 100px;
+  min-width: 110px;
   justify-content: flex-end;
 }
 
 .save-status .saving {
-  color: #6b7280;
+  color: #648398;
   animation: pulse 1s infinite;
 }
 
 .save-status .unsaved-indicator {
-  color: #f59e0b;
+  color: #b86f1f;
+  font-weight: 700;
 }
 
 .save-status .saved-time {
-  color: #6b7280;
-  font-size: 11px;
-}
-
-/* Entity count - clickable to toggle explorer */
-.entity-count {
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-
-.entity-count:hover {
-  background: #e5e7eb;
-}
-
-/* Help button */
-.status-help-btn {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  margin-left: 8px;
-}
-
-.status-help-btn:hover {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-/* Feedback button */
-.status-feedback-btn {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  border-radius: 50%;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  margin-left: 4px;
-}
-
-.status-feedback-btn:hover {
-  background: #10b981;
-  border-color: #10b981;
-  transform: scale(1.1);
+  color: #5a778d;
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -214,49 +159,21 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+@media (max-width: 1320px) {
   .status-bar {
-    background: #1f2937;
-    border-top-color: #374151;
-    color: #9ca3af;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .status-value {
-    color: #e5e7eb;
-  }
-
-  .measurement {
-    background: #1e3a5f;
-  }
-
-  .status-toggle {
-    color: #6b7280;
-  }
-
-  .status-toggle:hover {
-    background: #374151;
-    color: #9ca3af;
-  }
-
-  .entity-count:hover {
-    background: #374151;
-  }
-
-  .status-help-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #9ca3af;
-  }
-
-  .status-help-btn:hover {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: white;
+  .status-bar-section {
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 
-@media (max-width: 1200px) {
-  .status-bar-center {
-    display: none;
+@media (max-width: 900px) {
+  .status-bar {
+    margin: 0 10px 10px;
+    padding: 10px;
   }
 }

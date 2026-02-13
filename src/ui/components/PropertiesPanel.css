@@ -1,11 +1,15 @@
 /**
- * Properties Panel Styles
+ * Properties panel styles.
  */
 
 .properties-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 260px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color-strong);
+  background: linear-gradient(175deg, rgba(251, 254, 255, 0.96), rgba(236, 247, 252, 0.94));
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -16,11 +20,15 @@
 }
 
 .entity-type {
-  font-size: 11px;
-  padding: 2px 8px;
-  background: var(--bg-color);
-  border-radius: var(--radius-sm);
-  text-transform: capitalize;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #18506c;
+  border: 1px solid rgba(82, 140, 165, 0.36);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .properties-panel .panel-content.empty {
@@ -29,53 +37,64 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--text-muted);
-  padding: 24px;
+  gap: 6px;
+  color: #5e798b;
 }
 
 .properties-panel .hint {
   font-size: 12px;
-  margin-top: 8px;
+  margin: 0;
 }
 
 .multi-select-info {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .type-count {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
-  background: var(--bg-color);
-  border-radius: var(--radius-sm);
-  margin-bottom: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(93, 153, 179, 0.24);
+  background: rgba(255, 255, 255, 0.78);
+  padding: 7px 9px;
+  margin-bottom: 6px;
   font-size: 12px;
   text-transform: capitalize;
 }
 
 .property-section {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(82, 146, 173, 0.2);
+  background: rgba(255, 255, 255, 0.66);
+  padding: 10px;
 }
 
 .property-section h4 {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #57748a;
 }
 
 .property-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
+}
+
+.property-row:last-child {
+  margin-bottom: 0;
 }
 
 .property-row label {
-  flex: 0 0 80px;
-  font-size: 12px;
-  color: var(--text-muted);
+  flex: 0 0 78px;
+  font-size: 11px;
+  color: #5f7b8f;
 }
 
 .property-row input,
@@ -85,7 +104,7 @@
 }
 
 .property-row.readonly {
-  color: var(--text-muted);
+  color: #5d778b;
 }
 
 .property-row.readonly span {
@@ -94,7 +113,7 @@
 }
 
 .property-value.readonly {
-  color: var(--text-muted);
+  color: #658196;
   font-size: 11px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }

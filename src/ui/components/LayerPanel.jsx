@@ -1,6 +1,5 @@
 /**
- * Layer Panel Component
- * Layer management for the CAD application
+ * Layer management panel.
  */
 
 import React, { useState } from 'react';
@@ -20,27 +19,27 @@ export function LayerPanel({ layers, activeLayerId, onLayerSelect }) {
   } = useCADStore();
 
   const handleAddLayer = () => {
-    if (newLayerName.trim()) {
-      addLayer(newLayerName.trim());
-      setNewLayerName('');
-      setIsAddingLayer(false);
+    const normalized = newLayerName.trim();
+    if (!normalized) {
+      return;
     }
-  };
 
-  const handleColorChange = (layerId, color) => {
-    updateLayer(layerId, { color });
+    addLayer(normalized);
+    setNewLayerName('');
+    setIsAddingLayer(false);
   };
 
   return (
-    <div className="layer-panel">
+    <aside className="layer-panel">
       <div className="panel-header">
         <h3>Layers</h3>
         <button
+          type="button"
           className="add-layer-btn"
-          onClick={() => setIsAddingLayer(true)}
-          title="Add Layer"
+          onClick={() => setIsAddingLayer((prev) => !prev)}
+          title="Add layer"
         >
-          +
+          Add
         </button>
       </div>
 
@@ -49,16 +48,19 @@ export function LayerPanel({ layers, activeLayerId, onLayerSelect }) {
           <input
             type="text"
             value={newLayerName}
-            onChange={(e) => setNewLayerName(e.target.value)}
+            onChange={(event) => setNewLayerName(event.target.value)}
             placeholder="Layer name"
             autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddLayer();
-              if (e.key === 'Escape') setIsAddingLayer(false);
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                handleAddLayer();
+              }
+              if (event.key === 'Escape') {
+                setIsAddingLayer(false);
+              }
             }}
           />
-          <button onClick={handleAddLayer}>Add</button>
-          <button onClick={() => setIsAddingLayer(false)}>Cancel</button>
+          <button type="button" onClick={handleAddLayer}>Create</button>
         </div>
       )}
 
@@ -71,55 +73,58 @@ export function LayerPanel({ layers, activeLayerId, onLayerSelect }) {
           >
             <div className="layer-controls">
               <button
+                type="button"
                 className={`visibility-btn ${layer.visible ? 'visible' : 'hidden'}`}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={(event) => {
+                  event.stopPropagation();
                   toggleLayerVisibility(layer.id);
                 }}
-                title={layer.visible ? 'Hide Layer' : 'Show Layer'}
+                title={layer.visible ? 'Hide layer' : 'Show layer'}
               >
-                {layer.visible ? '👁' : '👁‍🗨'}
+                {layer.visible ? 'VIS' : 'OFF'}
               </button>
               <button
+                type="button"
                 className={`lock-btn ${layer.locked ? 'locked' : 'unlocked'}`}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={(event) => {
+                  event.stopPropagation();
                   toggleLayerLock(layer.id);
                 }}
-                title={layer.locked ? 'Unlock Layer' : 'Lock Layer'}
+                title={layer.locked ? 'Unlock layer' : 'Lock layer'}
               >
-                {layer.locked ? '🔒' : '🔓'}
+                {layer.locked ? 'LOCK' : 'OPEN'}
               </button>
             </div>
 
             <input
               type="color"
               value={layer.color}
-              onChange={(e) => handleColorChange(layer.id, e.target.value)}
-              onClick={(e) => e.stopPropagation()}
+              onChange={(event) => updateLayer(layer.id, { color: event.target.value })}
+              onClick={(event) => event.stopPropagation()}
               className="layer-color"
-              title="Layer Color"
+              title="Layer color"
             />
 
             <span className="layer-name">{layer.name}</span>
 
             {layer.id !== 'layer-0' && (
               <button
+                type="button"
                 className="delete-layer-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Delete layer "${layer.name}"?`)) {
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (window.confirm(`Delete layer "${layer.name}"?`)) {
                     deleteLayer(layer.id);
                   }
                 }}
-                title="Delete Layer"
+                title="Delete layer"
               >
-                ×
+                Del
               </button>
             )}
           </div>
         ))}
       </div>
-    </div>
+    </aside>
   );
 }

@@ -1,24 +1,41 @@
 /**
- * Menu Bar Component
- * Application menu with file, edit, view options
+ * Modern application header with module navigation and command input.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useCADStore } from '../store/cadStore.js';
 import { downloadDXF } from '../../core/dxf.js';
 import './MenuBar.css';
 
+function LegacyMenu({ title, children }) {
+  return (
+    <details className="legacy-menu">
+      <summary>{title}</summary>
+      <div className="legacy-menu-dropdown">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 export function MenuBar({
   project,
+  modules = [],
+  activeModule = 'workspace',
+  onModuleChange,
   onNewProject,
   onSave,
   onTogglePNGPanel,
   onToggleBuildingPanel,
   onExportPDF,
+  onShowKeyboardHelp,
+  onToggleExplorer,
+  onShowFeedback,
   isOffline,
 }) {
-  const [activeMenu, setActiveMenu] = useState(null);
-  const [helpDialog, setHelpDialog] = useState(null); // 'docs' | 'shortcuts' | 'standards' | 'about'
+  const [commandInput, setCommandInput] = useState('');
+  const [commandStatus, setCommandStatus] = useState(null);
+  const [showAbout, setShowAbout] = useState(false);
 
   const {
     canUndo,
@@ -39,423 +56,271 @@ export function MenuBar({
     setActiveTool,
   } = useCADStore();
 
-  const closeHelpDialog = () => setHelpDialog(null);
+  const commandExamples = useMemo(() => ([
+    'line',
+    'circle',
+    'save',
+    'undo',
+    'redo',
+    'toggle grid',
+    'toggle snap',
+    'standards',
+    'drainage',
+    'reports',
+    'export pdf',
+    'export dxf',
+  ]), []);
 
-  const handleMenuClick = (menu) => {
-    setActiveMenu(activeMenu === menu ? null : menu);
-  };
+  const runCommand = (rawCommand) => {
+    const command = rawCommand.trim().toLowerCase();
+    if (!command) {
+      return;
+    }
 
-  const handleMenuItemClick = (action) => {
-    action();
-    setActiveMenu(null);
+    let handled = true;
+    let response = 'Command applied.';
+
+    if (command.includes('line')) {
+      setActiveTool('line');
+      response = 'Tool set to line.';
+    } else if (command.includes('polyline')) {
+      setActiveTool('polyline');
+      response = 'Tool set to polyline.';
+    } else if (command.includes('circle')) {
+      setActiveTool('circle');
+      response = 'Tool set to circle.';
+    } else if (command.includes('rectangle')) {
+      setActiveTool('rectangle');
+      response = 'Tool set to rectangle.';
+    } else if (command.includes('text')) {
+      setActiveTool('text');
+      response = 'Tool set to text.';
+    } else if (command.includes('save')) {
+      onSave();
+      response = 'Project save requested.';
+    } else if (command.includes('undo')) {
+      if (canUndo()) {
+        undo();
+        response = 'Undid previous action.';
+      } else {
+        response = 'Nothing to undo.';
+      }
+    } else if (command.includes('redo')) {
+      if (canRedo()) {
+        redo();
+        response = 'Redid previous action.';
+      } else {
+        response = 'Nothing to redo.';
+      }
+    } else if (command.includes('grid')) {
+      toggleGrid();
+      response = 'Grid toggled.';
+    } else if (command.includes('snap')) {
+      toggleSnap();
+      response = 'Snap toggled.';
+    } else if (command.includes('export pdf')) {
+      onExportPDF?.();
+      response = 'PDF export requested.';
+    } else if (command.includes('export dxf')) {
+      if (project) {
+        downloadDXF(project, `${project.name || 'drawing'}.dxf`);
+        response = 'DXF export requested.';
+      } else {
+        response = 'No open project for DXF export.';
+      }
+    } else if (command.includes('standards')) {
+      onModuleChange?.('standards');
+      response = 'Standards module opened.';
+    } else if (command.includes('qa')) {
+      onModuleChange?.('qa');
+      response = 'QA module opened.';
+    } else if (command.includes('drainage')) {
+      onModuleChange?.('drainage');
+      response = 'Drainage module opened.';
+    } else if (command.includes('report')) {
+      onModuleChange?.('reports');
+      response = 'Reports module opened.';
+    } else if (command.includes('workspace')) {
+      onModuleChange?.('workspace');
+      response = 'Workspace module opened.';
+    } else if (command.includes('explorer')) {
+      onToggleExplorer?.();
+      response = 'Project explorer toggled.';
+    } else if (command.includes('help')) {
+      onShowKeyboardHelp?.();
+      response = 'Keyboard help opened.';
+    } else if (command.includes('feedback')) {
+      onShowFeedback?.();
+      response = 'Feedback form opened.';
+    } else if (command.includes('new project')) {
+      onNewProject();
+      response = 'New project dialog opened.';
+    } else {
+      handled = false;
+      response = 'Unknown command. Try one of the suggestions.';
+    }
+
+    setCommandStatus({ handled, response });
+    setTimeout(() => setCommandStatus(null), 2600);
+    setCommandInput('');
   };
 
   return (
-    <div className="menu-bar">
-      <div className="menu-left">
-        <div className="app-logo">
-          <span className="logo-icon">🏗</span>
-          <span className="logo-text">PNG Civil CAD</span>
+    <header className="menu-bar">
+      <div className="menu-row menu-row-top">
+        <div className="brand-block">
+          <span className="brand-kicker">PNG Civil Engineering Standards Platform</span>
+          <div className="brand-title-row">
+            <h1>PNG AutoCAD Workspace</h1>
+            <span className="brand-version">Forward UI</span>
+          </div>
         </div>
 
-        <div className="menu-items">
-          {/* File Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button ${activeMenu === 'file' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('file')}
-            >
-              File
-            </button>
-            {activeMenu === 'file' && (
-              <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(onNewProject)}>
-                  <span className="shortcut">Ctrl+N</span>
-                  New Project
-                </button>
-                <button onClick={() => handleMenuItemClick(onNewProject)}>
-                  <span className="shortcut">Ctrl+O</span>
-                  Open Project
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(onSave)}>
-                  <span className="shortcut">Ctrl+S</span>
-                  Save
-                </button>
-                <button onClick={() => handleMenuItemClick(onSave)}>
-                  <span className="shortcut">Ctrl+Shift+S</span>
-                  Save As...
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(() => project && downloadDXF(project, `${project.name || 'drawing'}.dxf`))}>
-                  Export DXF
-                </button>
-                <button onClick={() => handleMenuItemClick(onExportPDF || (() => { }))}>
-                  📄 Export PDF
-                </button>
-                <button onClick={() => handleMenuItemClick(() => window.print())}>
-                  Print...
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Edit Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button ${activeMenu === 'edit' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('edit')}
-            >
-              Edit
-            </button>
-            {activeMenu === 'edit' && (
-              <div className="menu-dropdown">
-                <button
-                  onClick={() => handleMenuItemClick(undo)}
-                  disabled={!canUndo()}
-                >
-                  <span className="shortcut">Ctrl+Z</span>
-                  Undo
-                </button>
-                <button
-                  onClick={() => handleMenuItemClick(redo)}
-                  disabled={!canRedo()}
-                >
-                  <span className="shortcut">Ctrl+Y</span>
-                  Redo
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(cut)}>
-                  <span className="shortcut">Ctrl+X</span>
-                  Cut
-                </button>
-                <button onClick={() => handleMenuItemClick(copy)}>
-                  <span className="shortcut">Ctrl+C</span>
-                  Copy
-                </button>
-                <button onClick={() => handleMenuItemClick(() => paste())}>
-                  <span className="shortcut">Ctrl+V</span>
-                  Paste
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(selectAll)}>
-                  <span className="shortcut">Ctrl+A</span>
-                  Select All
-                </button>
-                <button onClick={() => handleMenuItemClick(clearSelection)}>
-                  <span className="shortcut">Escape</span>
-                  Clear Selection
-                </button>
-                <button onClick={() => handleMenuItemClick(deleteSelectedEntities)}>
-                  <span className="shortcut">Delete</span>
-                  Delete Selected
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* View Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button ${activeMenu === 'view' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('view')}
-            >
-              View
-            </button>
-            {activeMenu === 'view' && (
-              <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(() => setZoom(1))}>
-                  <span className="shortcut">Ctrl+0</span>
-                  Zoom to Fit
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setZoom(1))}>
-                  <span className="shortcut">Ctrl+1</span>
-                  Zoom 100%
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(toggleGrid)}>
-                  <span className="shortcut">G</span>
-                  {gridSettings.visible ? '✓ ' : ''}Grid
-                </button>
-                <button onClick={() => handleMenuItemClick(toggleSnap)}>
-                  <span className="shortcut">S</span>
-                  {snapSettings.enabled ? '✓ ' : ''}Snap
-                </button>
-                <div className="menu-divider" />
-                <button disabled>
-                  Layer Panel
-                </button>
-                <button disabled>
-                  Properties Panel
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Draw Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button ${activeMenu === 'draw' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('draw')}
-            >
-              Draw
-            </button>
-            {activeMenu === 'draw' && (
-              <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('line'))}>
-                  <span className="shortcut">L</span>
-                  Line
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('polyline'))}>
-                  <span className="shortcut">P</span>
-                  Polyline
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('circle'))}>
-                  <span className="shortcut">C</span>
-                  Circle
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('arc'))}>
-                  <span className="shortcut">A</span>
-                  Arc
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('rectangle'))}>
-                  <span className="shortcut">R</span>
-                  Rectangle
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setActiveTool('polygon'))}>
-                  <span className="shortcut">G</span>
-                  Polygon
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* PNG Analysis Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button png-menu ${activeMenu === 'png' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('png')}
-            >
-              PNG Analysis
-            </button>
-            {activeMenu === 'png' && (
-              <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Analysis Panel
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Climate Report
-                </button>
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Seismic Analysis
-                </button>
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Flood Assessment
-                </button>
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Material Database
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(onToggleBuildingPanel || (() => { }))}>
-                  🏗️ Building Parameters
-                </button>
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Structural Design
-                </button>
-                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
-                  Drainage Calculator
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Help Menu */}
-          <div className="menu-item">
-            <button
-              className={`menu-button ${activeMenu === 'help' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('help')}
-            >
-              Help
-            </button>
-            {activeMenu === 'help' && (
-              <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(() => setHelpDialog('docs'))}>
-                  Documentation
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setHelpDialog('standards'))}>
-                  PNG Building Standards
-                </button>
-                <button onClick={() => handleMenuItemClick(() => setHelpDialog('shortcuts'))}>
-                  Keyboard Shortcuts
-                </button>
-                <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(() => setHelpDialog('about'))}>
-                  About PNG Civil CAD
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="menu-meta">
+          {isOffline && <span className="status-pill status-pill-warning">Offline</span>}
+          {project && (
+            <span className="status-pill">
+              {project.name} | {project.location?.province || 'No province'}
+            </span>
+          )}
+          <button className="ghost" onClick={onNewProject}>New</button>
+          <button className="primary" onClick={onSave}>Save</button>
         </div>
       </div>
 
-      <div className="menu-right">
-        {isOffline && (
-          <div className="offline-indicator" title="Working Offline">
-            <span>📴</span> Offline
-          </div>
-        )}
-        {project && (
-          <div className="project-info">
-            <span className="project-name">{project.name}</span>
-            <span className="project-location">{project.location.province}</span>
-          </div>
-        )}
+      <div className="menu-row menu-row-middle">
+        <nav className="module-tabs" aria-label="Primary modules">
+          {modules.map((module) => (
+            <button
+              key={module.id}
+              className={`module-tab ${activeModule === module.id ? 'active' : ''}`}
+              onClick={() => onModuleChange?.(module.id)}
+            >
+              {module.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="command-center">
+          <input
+            type="text"
+            value={commandInput}
+            onChange={(event) => setCommandInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                runCommand(commandInput);
+              }
+            }}
+            placeholder="Command bar: line, save, standards, export pdf..."
+            list="menu-command-suggestions"
+            aria-label="Command bar"
+          />
+          <datalist id="menu-command-suggestions">
+            {commandExamples.map((example) => (
+              <option key={example} value={example} />
+            ))}
+          </datalist>
+          <button className="command-run" onClick={() => runCommand(commandInput)}>Run</button>
+          {commandStatus && (
+            <span className={`command-status ${commandStatus.handled ? 'ok' : 'warn'}`}>
+              {commandStatus.response}
+            </span>
+          )}
+        </div>
+
+        <div className="quick-actions">
+          <button onClick={undo} disabled={!canUndo()}>Undo</button>
+          <button onClick={redo} disabled={!canRedo()}>Redo</button>
+          <button
+            className={gridSettings.visible ? 'toggled' : ''}
+            onClick={toggleGrid}
+          >
+            Grid
+          </button>
+          <button
+            className={snapSettings.enabled ? 'toggled' : ''}
+            onClick={toggleSnap}
+          >
+            Snap
+          </button>
+          <button onClick={() => onModuleChange?.('standards')}>Standards</button>
+          <button onClick={onToggleExplorer}>Explorer</button>
+          <button onClick={onShowKeyboardHelp}>Help</button>
+        </div>
       </div>
 
-      {/* Click outside to close menu */}
-      {activeMenu && (
-        <div className="menu-backdrop" onClick={() => setActiveMenu(null)} />
-      )}
+      <div className="menu-row menu-row-bottom">
+        <LegacyMenu title="File">
+          <button onClick={onNewProject}>New Project</button>
+          <button onClick={onSave}>Save Project</button>
+          <button onClick={() => project && downloadDXF(project, `${project.name || 'drawing'}.dxf`)}>
+            Export DXF
+          </button>
+          <button onClick={onExportPDF}>Export PDF</button>
+        </LegacyMenu>
 
-      {/* Help Dialogs */}
-      {helpDialog && (
-        <div className="help-dialog-overlay" onClick={closeHelpDialog}>
-          <div className="help-dialog" onClick={(e) => e.stopPropagation()}>
-            <button className="help-dialog-close" onClick={closeHelpDialog}>×</button>
+        <LegacyMenu title="Edit">
+          <button onClick={undo} disabled={!canUndo()}>Undo</button>
+          <button onClick={redo} disabled={!canRedo()}>Redo</button>
+          <button onClick={cut}>Cut</button>
+          <button onClick={copy}>Copy</button>
+          <button onClick={() => paste()}>Paste</button>
+          <button onClick={selectAll}>Select All</button>
+          <button onClick={clearSelection}>Clear Selection</button>
+          <button onClick={deleteSelectedEntities}>Delete Selected</button>
+        </LegacyMenu>
 
-            {helpDialog === 'docs' && (
-              <>
-                <h2>📚 Documentation</h2>
-                <div className="help-content">
-                  <h3>Getting Started</h3>
-                  <p>PNG Civil CAD is a browser-based CAD application designed for civil engineering projects in Papua New Guinea.</p>
+        <LegacyMenu title="Draw">
+          <button onClick={() => setActiveTool('select')}>Select</button>
+          <button onClick={() => setActiveTool('line')}>Line</button>
+          <button onClick={() => setActiveTool('polyline')}>Polyline</button>
+          <button onClick={() => setActiveTool('circle')}>Circle</button>
+          <button onClick={() => setActiveTool('arc')}>Arc</button>
+          <button onClick={() => setActiveTool('rectangle')}>Rectangle</button>
+        </LegacyMenu>
 
-                  <h3>Creating a Project</h3>
-                  <ol>
-                    <li>Click <strong>File → New Project</strong> or press <kbd>Ctrl+N</kbd></li>
-                    <li>Enter project name and select your province</li>
-                    <li>Choose terrain type for accurate analysis</li>
-                    <li>Click <strong>Create Project</strong></li>
-                  </ol>
+        <LegacyMenu title="Modules">
+          <button onClick={() => onModuleChange?.('workspace')}>Workspace</button>
+          <button onClick={() => onModuleChange?.('standards')}>Standards</button>
+          <button onClick={() => onModuleChange?.('qa')}>QA / Inspection</button>
+          <button onClick={() => onModuleChange?.('drainage')}>Drainage</button>
+          <button onClick={() => onModuleChange?.('reports')}>Reports</button>
+          <button onClick={onToggleBuildingPanel}>Building Parameters</button>
+          <button onClick={onTogglePNGPanel}>Open Standards Panel</button>
+        </LegacyMenu>
 
-                  <h3>Drawing Tools</h3>
-                  <ul>
-                    <li><strong>Line (L)</strong> - Click start point, click end point</li>
-                    <li><strong>Rectangle (R)</strong> - Click corner, drag to opposite corner</li>
-                    <li><strong>Circle (C)</strong> - Click center, drag for radius</li>
-                    <li><strong>Polyline (P)</strong> - Click points, double-click to finish</li>
-                  </ul>
+        <LegacyMenu title="View">
+          <button onClick={() => setZoom(1)}>Zoom 100%</button>
+          <button onClick={() => setZoom(1)}>Zoom to Fit</button>
+          <button onClick={toggleGrid}>{gridSettings.visible ? 'Hide Grid' : 'Show Grid'}</button>
+          <button onClick={toggleSnap}>{snapSettings.enabled ? 'Disable Snap' : 'Enable Snap'}</button>
+          <button onClick={onToggleExplorer}>Project Explorer</button>
+        </LegacyMenu>
 
-                  <h3>PNG Analysis Features</h3>
-                  <p>Access the PNG Analysis menu for seismic, climate, flood, and structural analysis tools tailored to Papua New Guinea conditions.</p>
-                </div>
-              </>
-            )}
+        <LegacyMenu title="Help">
+          <button onClick={onShowKeyboardHelp}>Keyboard Shortcuts</button>
+          <button onClick={() => setShowAbout(true)}>About</button>
+          <button onClick={onShowFeedback}>Send Feedback</button>
+        </LegacyMenu>
+      </div>
 
-            {helpDialog === 'shortcuts' && (
-              <>
-                <h2>⌨️ Keyboard Shortcuts</h2>
-                <div className="help-content shortcuts-table">
-                  <table>
-                    <thead>
-                      <tr><th>Action</th><th>Shortcut</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr><td>New Project</td><td><kbd>Ctrl+N</kbd></td></tr>
-                      <tr><td>Save</td><td><kbd>Ctrl+S</kbd></td></tr>
-                      <tr><td>Undo</td><td><kbd>Ctrl+Z</kbd></td></tr>
-                      <tr><td>Redo</td><td><kbd>Ctrl+Y</kbd></td></tr>
-                      <tr><td>Select All</td><td><kbd>Ctrl+A</kbd></td></tr>
-                      <tr><td>Copy</td><td><kbd>Ctrl+C</kbd></td></tr>
-                      <tr><td>Paste</td><td><kbd>Ctrl+V</kbd></td></tr>
-                      <tr><td>Cut</td><td><kbd>Ctrl+X</kbd></td></tr>
-                    </tbody>
-                  </table>
-                  <h3>Drawing Tools</h3>
-                  <table>
-                    <tbody>
-                      <tr><td>Select Tool</td><td><kbd>V</kbd> or <kbd>Esc</kbd></td></tr>
-                      <tr><td>Line</td><td><kbd>L</kbd></td></tr>
-                      <tr><td>Circle</td><td><kbd>C</kbd></td></tr>
-                      <tr><td>Rectangle</td><td><kbd>R</kbd></td></tr>
-                      <tr><td>Polyline</td><td><kbd>P</kbd></td></tr>
-                      <tr><td>Text</td><td><kbd>T</kbd></td></tr>
-                      <tr><td>Dimension</td><td><kbd>D</kbd></td></tr>
-                      <tr><td>Measure</td><td><kbd>M</kbd></td></tr>
-                      <tr><td>Pan</td><td><kbd>H</kbd></td></tr>
-                      <tr><td>Zoom</td><td><kbd>Z</kbd></td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
-            {helpDialog === 'standards' && (
-              <>
-                <h2>🏛️ PNG Building Standards</h2>
-                <div className="help-content">
-                  <h3>Referenced Standards</h3>
-                  <ul>
-                    <li><strong>AS/NZS 1170.4</strong> - Earthquake actions</li>
-                    <li><strong>AS/NZS 1170.2</strong> - Wind actions</li>
-                    <li><strong>AS 2870</strong> - Residential slabs and footings</li>
-                    <li><strong>AS 3600</strong> - Concrete structures</li>
-                    <li><strong>ASCE 24</strong> - Flood resistant design</li>
-                  </ul>
-
-                  <h3>Seismic Zones</h3>
-                  <table>
-                    <thead><tr><th>Zone</th><th>Hazard (Z)</th><th>Provinces</th></tr></thead>
-                    <tbody>
-                      <tr><td>Zone 4</td><td>0.45-0.55</td><td>East New Britain, Madang, Morobe</td></tr>
-                      <tr><td>Zone 3</td><td>0.35-0.40</td><td>Central, Milne Bay, Oro</td></tr>
-                      <tr><td>Zone 2</td><td>0.28-0.30</td><td>Highlands provinces</td></tr>
-                      <tr><td>Zone 1</td><td>0.15</td><td>Western</td></tr>
-                    </tbody>
-                  </table>
-
-                  <h3>Wind Regions</h3>
-                  <table>
-                    <thead><tr><th>Region</th><th>Description</th><th>Design Speed</th></tr></thead>
-                    <tbody>
-                      <tr><td>A</td><td>Non-cyclonic (Highlands)</td><td>41 m/s</td></tr>
-                      <tr><td>B</td><td>Intermediate (South coast)</td><td>50 m/s</td></tr>
-                      <tr><td>C</td><td>Cyclonic (North coast)</td><td>60 m/s</td></tr>
-                      <tr><td>D</td><td>Severe cyclonic (Islands)</td><td>67 m/s</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
-            {helpDialog === 'about' && (
-              <>
-                <h2>🏗️ About PNG Civil CAD</h2>
-                <div className="help-content about-content">
-                  <p className="version"><strong>Version 2.0.0</strong></p>
-                  <p>Civil Engineering CAD Software designed specifically for Papua New Guinea conditions.</p>
-
-                  <h3>Features</h3>
-                  <ul>
-                    <li>PNG-specific seismic, wind, and flood analysis</li>
-                    <li>Local materials database</li>
-                    <li>Climate zone considerations</li>
-                    <li>Low-volume road design standards</li>
-                    <li>DXF import/export support</li>
-                    <li>Offline-capable design</li>
-                  </ul>
-
-                  <h3>Design Philosophy</h3>
-                  <p>Built with safety, local context, and longevity as core principles. Embeds engineering intelligence specific to PNG conditions.</p>
-
-                  <p className="license">MIT License</p>
-                </div>
-              </>
-            )}
+      {showAbout && (
+        <div className="about-overlay" onClick={() => setShowAbout(false)}>
+          <div className="about-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="about-close" onClick={() => setShowAbout(false)}>x</button>
+            <h2>About This Platform</h2>
+            <p>
+              PNG AutoCAD Workspace is a standards-first CAD environment for PNG civil engineering.
+              It combines drafting tools with contextual analysis for local project delivery.
+            </p>
+            <ul>
+              <li>Integrated CAD drawing workspace</li>
+              <li>PNG-aware standards and analysis modules</li>
+              <li>Offline-capable local project workflow</li>
+            </ul>
           </div>
         </div>
       )}
-    </div>
+    </header>
   );
 }

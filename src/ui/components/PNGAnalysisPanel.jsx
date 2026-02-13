@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PNG Analysis Panel
  * Climate, seismic, flood, and material analysis for PNG projects
  */
@@ -12,6 +12,14 @@ import {
   ALL_MATERIALS,
 } from '../../png/index.js';
 import './PNGAnalysisPanel.css';
+
+const TAB_CONFIG = [
+  { id: 'climate', label: 'Climate' },
+  { id: 'seismic', label: 'Seismic' },
+  { id: 'flood', label: 'Flood' },
+  { id: 'materials', label: 'Materials' },
+  { id: 'structural', label: 'Structural' },
+];
 
 export function PNGAnalysisPanel({ project, onClose }) {
   const [activeTab, setActiveTab] = useState('climate');
@@ -70,46 +78,34 @@ export function PNGAnalysisPanel({ project, onClose }) {
     return ALL_MATERIALS;
   }, [materialSearch]);
 
+  const activeTabLabel = TAB_CONFIG.find((tab) => tab.id === activeTab)?.label || 'Climate';
+
   return (
     <div className="png-analysis-panel">
-      <div className="panel-header">
-        <h2>PNG Analysis</h2>
-        <button className="close-button" onClick={onClose}>
-          ×
-        </button>
+      <div className="panel-header analysis-header">
+        <div className="analysis-header-copy">
+          <p className="analysis-kicker">PNG Standards Module</p>
+          <h2>Analysis Workspace</h2>
+          <p>{province} | {terrainType} | Active: {activeTabLabel}</p>
+        </div>
+        <div className="analysis-header-chips">
+          <span className="analysis-chip">Zone {seismicReport.seismicData.zone.toUpperCase()}</span>
+          <span className="analysis-chip">Flood {floodReport.floodZone.toUpperCase()}</span>
+          <span className="analysis-chip">{filteredMaterials.length} Materials</span>
+          <button className="close-button" onClick={onClose}>Close</button>
+        </div>
       </div>
 
       <div className="panel-tabs">
-        <button
-          className={`tab ${activeTab === 'climate' ? 'active' : ''}`}
-          onClick={() => setActiveTab('climate')}
-        >
-          Climate
-        </button>
-        <button
-          className={`tab ${activeTab === 'seismic' ? 'active' : ''}`}
-          onClick={() => setActiveTab('seismic')}
-        >
-          Seismic
-        </button>
-        <button
-          className={`tab ${activeTab === 'flood' ? 'active' : ''}`}
-          onClick={() => setActiveTab('flood')}
-        >
-          Flood
-        </button>
-        <button
-          className={`tab ${activeTab === 'materials' ? 'active' : ''}`}
-          onClick={() => setActiveTab('materials')}
-        >
-          Materials
-        </button>
-        <button
-          className={`tab ${activeTab === 'structural' ? 'active' : ''}`}
-          onClick={() => setActiveTab('structural')}
-        >
-          Structural
-        </button>
+        {TAB_CONFIG.map((tab) => (
+          <button
+            key={tab.id}
+            className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="panel-content">
@@ -172,7 +168,7 @@ function ClimateTab({ report }) {
           <div className="data-item">
             <label>Temperature</label>
             <span>
-              {report.climateData.averageTemperature.min}°C - {report.climateData.averageTemperature.max}°C
+              {report.climateData.averageTemperature.min} degC - {report.climateData.averageTemperature.max} degC
             </span>
           </div>
           <div className="data-item">
@@ -205,7 +201,7 @@ function ClimateTab({ report }) {
         <ul className="design-factors">
           <li>Ventilation: {report.designFactors.ventilationRequired}</li>
           <li>Moisture Protection: {report.designFactors.moistureProtection}</li>
-          <li>Minimum Roof Pitch: {report.designFactors.roofPitchMin}°</li>
+          <li>Minimum Roof Pitch: {report.designFactors.roofPitchMin} deg</li>
           <li>Recommended Overhangs: {report.designFactors.overhangsRecommended}m</li>
           <li>Corrosion Protection: {report.designFactors.corrosionProtection}</li>
           <li>Termite Protection: {report.designFactors.termiteProtection}</li>
@@ -425,7 +421,7 @@ function FloodTab({
           {report.nearbyRivers.map((river, i) => (
             <div key={i} className="river-info">
               <h4>{river.name}</h4>
-              <p>Length: {river.length} km | Catchment: {river.catchmentArea} km²</p>
+              <p>Length: {river.length} km | Catchment: {river.catchmentArea} km^2</p>
               <p>Flood Risk: <span className={`risk-${river.floodRisk}`}>{river.floodRisk}</span></p>
             </div>
           ))}
@@ -541,7 +537,7 @@ function MaterialsTab({
             <h4>Properties</h4>
             <ul>
               {selectedMaterial.properties.density && (
-                <li>Density: {selectedMaterial.properties.density} kg/m³</li>
+                <li>Density: {selectedMaterial.properties.density} kg/m^3</li>
               )}
               {selectedMaterial.properties.compressiveStrength && (
                 <li>Compressive Strength: {selectedMaterial.properties.compressiveStrength} MPa</li>
@@ -645,3 +641,7 @@ function StructuralTab({ report, climateReport }) {
     </div>
   );
 }
+
+
+
+

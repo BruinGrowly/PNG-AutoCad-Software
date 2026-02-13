@@ -1,139 +1,75 @@
 /**
- * CAD Toolbar Component
- * Drawing tools and actions
+ * CAD toolbar with grouped tools.
  */
 
 import React from 'react';
 import './Toolbar.css';
 
 const TOOLS = [
-  // Navigation
-  { id: 'select', name: 'Select', icon: '⬚', shortcut: 'V', group: 'navigation' },
-  { id: 'pan', name: 'Pan', icon: '✋', shortcut: 'H', group: 'navigation' },
-  { id: 'zoom', name: 'Zoom', icon: '🔍', shortcut: 'Z', group: 'navigation' },
+  { id: 'select', name: 'Select', icon: 'SE', shortcut: 'V', group: 'navigation' },
+  { id: 'pan', name: 'Pan', icon: 'PA', shortcut: 'H', group: 'navigation' },
+  { id: 'zoom', name: 'Zoom', icon: 'ZO', shortcut: 'Z', group: 'navigation' },
 
-  // Drawing
-  { id: 'line', name: 'Line', icon: '╱', shortcut: 'L', group: 'draw' },
-  { id: 'polyline', name: 'Polyline', icon: '⌇', shortcut: 'P', group: 'draw' },
-  { id: 'circle', name: 'Circle', icon: '○', shortcut: 'C', group: 'draw' },
-  { id: 'arc', name: 'Arc', icon: '⌒', shortcut: 'A', group: 'draw' },
-  { id: 'rectangle', name: 'Rectangle', icon: '▭', shortcut: 'R', group: 'draw' },
-  { id: 'polygon', name: 'Polygon', icon: '⬡', shortcut: 'G', group: 'draw' },
+  { id: 'line', name: 'Line', icon: 'LI', shortcut: 'L', group: 'draw' },
+  { id: 'polyline', name: 'Polyline', icon: 'PL', shortcut: 'P', group: 'draw' },
+  { id: 'circle', name: 'Circle', icon: 'CI', shortcut: 'C', group: 'draw' },
+  { id: 'arc', name: 'Arc', icon: 'AR', shortcut: 'A', group: 'draw' },
+  { id: 'rectangle', name: 'Rect', icon: 'RE', shortcut: 'R', group: 'draw' },
+  { id: 'polygon', name: 'Poly', icon: 'PG', shortcut: 'G', group: 'draw' },
 
-  // Modify
-  { id: 'trim', name: 'Trim', icon: '✂', shortcut: 'TR', group: 'modify' },
-  { id: 'extend', name: 'Extend', icon: '↔', shortcut: 'EX', group: 'modify' },
-  { id: 'offset', name: 'Offset', icon: '⧉', shortcut: 'O', group: 'modify' },
-  { id: 'mirror', name: 'Mirror', icon: '⌀', shortcut: 'MI', group: 'modify' },
-  { id: 'rotate', name: 'Rotate', icon: '↻', shortcut: 'RO', group: 'modify' },
-  { id: 'scale', name: 'Scale', icon: '⊡', shortcut: 'SC', group: 'modify' },
-  { id: 'array', name: 'Array', icon: '▦', shortcut: 'AR', group: 'modify' },
+  { id: 'trim', name: 'Trim', icon: 'TR', shortcut: 'TR', group: 'modify' },
+  { id: 'extend', name: 'Extend', icon: 'EX', shortcut: 'EX', group: 'modify' },
+  { id: 'offset', name: 'Offset', icon: 'OF', shortcut: 'O', group: 'modify' },
+  { id: 'mirror', name: 'Mirror', icon: 'MI', shortcut: 'MI', group: 'modify' },
+  { id: 'rotate', name: 'Rotate', icon: 'RO', shortcut: 'RO', group: 'modify' },
+  { id: 'scale', name: 'Scale', icon: 'SC', shortcut: 'SC', group: 'modify' },
+  { id: 'array', name: 'Array', icon: 'AY', shortcut: 'AR', group: 'modify' },
 
-  // Annotate
-  { id: 'text', name: 'Text', icon: 'T', shortcut: 'T', group: 'annotate' },
-  { id: 'dimension', name: 'Dimension', icon: '↔︎', shortcut: 'D', group: 'annotate' },
-  { id: 'measure', name: 'Measure', icon: '📏', shortcut: 'M', group: 'annotate' },
-  { id: 'hatch', name: 'Hatch', icon: '▤', shortcut: 'HA', group: 'annotate' },
+  { id: 'text', name: 'Text', icon: 'TX', shortcut: 'T', group: 'annotate' },
+  { id: 'dimension', name: 'Dim', icon: 'DM', shortcut: 'D', group: 'annotate' },
+  { id: 'measure', name: 'Measure', icon: 'MS', shortcut: 'M', group: 'annotate' },
+  { id: 'hatch', name: 'Hatch', icon: 'HT', shortcut: 'HA', group: 'annotate' },
 
-  // Surface (Civil 3D features)
-  { id: 'surface', name: 'Surface', icon: '🏔️', shortcut: 'SU', group: 'surface' },
+  { id: 'surface', name: 'Surface', icon: 'SF', shortcut: 'SU', group: 'surface' },
+];
+
+const GROUPS = [
+  { id: 'navigation', label: 'Navigate' },
+  { id: 'draw', label: 'Draw' },
+  { id: 'modify', label: 'Modify' },
+  { id: 'annotate', label: 'Annotate' },
+  { id: 'surface', label: 'Surface' },
 ];
 
 export function Toolbar({ activeTool, onToolChange }) {
-  const groupedTools = {
-    navigation: TOOLS.filter((t) => t.group === 'navigation'),
-    draw: TOOLS.filter((t) => t.group === 'draw'),
-    modify: TOOLS.filter((t) => t.group === 'modify'),
-    annotate: TOOLS.filter((t) => t.group === 'annotate'),
-    surface: TOOLS.filter((t) => t.group === 'surface'),
-  };
-
   return (
-    <div className="toolbar">
-      <div className="toolbar-section">
-        <div className="toolbar-section-title">Navigate</div>
-        <div className="toolbar-buttons">
-          {groupedTools.navigation.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              tool={tool}
-              isActive={activeTool === tool.id}
-              onClick={() => onToolChange(tool.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      <div className="toolbar-section">
-        <div className="toolbar-section-title">Draw</div>
-        <div className="toolbar-buttons">
-          {groupedTools.draw.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              tool={tool}
-              isActive={activeTool === tool.id}
-              onClick={() => onToolChange(tool.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      <div className="toolbar-section">
-        <div className="toolbar-section-title">Modify</div>
-        <div className="toolbar-buttons">
-          {groupedTools.modify.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              tool={tool}
-              isActive={activeTool === tool.id}
-              onClick={() => onToolChange(tool.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      <div className="toolbar-section">
-        <div className="toolbar-section-title">Annotate</div>
-        <div className="toolbar-buttons">
-          {groupedTools.annotate.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              tool={tool}
-              isActive={activeTool === tool.id}
-              onClick={() => onToolChange(tool.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="toolbar-divider" />
-
-      <div className="toolbar-section">
-        <div className="toolbar-section-title">Surface</div>
-        <div className="toolbar-buttons">
-          {groupedTools.surface.map((tool) => (
-            <ToolButton
-              key={tool.id}
-              tool={tool}
-              isActive={activeTool === tool.id}
-              onClick={() => onToolChange(tool.id)}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+    <aside className="toolbar">
+      {GROUPS.map((group, index) => (
+        <React.Fragment key={group.id}>
+          <div className="toolbar-section">
+            <div className="toolbar-section-title">{group.label}</div>
+            <div className="toolbar-buttons">
+              {TOOLS.filter((tool) => tool.group === group.id).map((tool) => (
+                <ToolButton
+                  key={tool.id}
+                  tool={tool}
+                  isActive={activeTool === tool.id}
+                  onClick={() => onToolChange(tool.id)}
+                />
+              ))}
+            </div>
+          </div>
+          {index < GROUPS.length - 1 && <div className="toolbar-divider" />}
+        </React.Fragment>
+      ))}
+    </aside>
   );
 }
 
 function ToolButton({ tool, isActive, onClick }) {
   return (
     <button
+      type="button"
       className={`toolbar-button ${isActive ? 'active' : ''}`}
       onClick={onClick}
       title={`${tool.name} (${tool.shortcut})`}

@@ -23,6 +23,39 @@ import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import { exportToPDF } from '../core/pdfExport.js';
 import './styles/App.css';
 
+const MODULES = [
+  {
+    id: 'workspace',
+    label: 'Workspace',
+    title: 'Core CAD Workspace',
+    description: 'Draft, annotate, and coordinate model geometry with project layers.',
+  },
+  {
+    id: 'standards',
+    label: 'Standards',
+    title: 'PNG Standards Assistant',
+    description: 'Keep designs aligned with PNG context and AU/NZ-derived practice.',
+  },
+  {
+    id: 'qa',
+    label: 'QA / Inspection',
+    title: 'Field QA and Inspection',
+    description: 'Prepare checks, mark issues, and keep a clear audit trail.',
+  },
+  {
+    id: 'drainage',
+    label: 'Drainage',
+    title: 'Drainage and Site Flows',
+    description: 'Work on culverts, channels, and terrain-aware drainage decisions.',
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    title: 'Compliance and Delivery Reports',
+    description: 'Package outputs for review with exports and project summaries.',
+  },
+];
+
 export function App() {
   const [showProjectDialog, setShowProjectDialog] = useState(true);
   const [showPNGPanel, setShowPNGPanel] = useState(false);
@@ -31,6 +64,7 @@ export function App() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showSurfaceImport, setShowSurfaceImport] = useState(false);
+  const [activeModule, setActiveModule] = useState('workspace');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastManualSaveTime, setLastManualSaveTime] = useState(null);
 
@@ -205,6 +239,23 @@ export function App() {
     setActiveTool(tool);
   }, [setActiveTool]);
 
+  const handleModuleChange = useCallback((moduleId) => {
+    setActiveModule(moduleId);
+
+    if (moduleId === 'standards' || moduleId === 'qa') {
+      setShowPNGPanel(true);
+    }
+
+    if (moduleId === 'drainage') {
+      setShowPNGPanel(true);
+      setShowBuildingPanel(true);
+    }
+
+    if (moduleId === 'reports') {
+      setShowProjectExplorer(true);
+    }
+  }, []);
+
   const togglePNGPanel = useCallback(() => {
     setShowPNGPanel((prev) => !prev);
   }, []);
@@ -244,6 +295,23 @@ export function App() {
     addEntities(entities);
   }, []);
 
+  const moduleDetails = useMemo(
+    () => MODULES.find((module) => module.id === activeModule) || MODULES[0],
+    [activeModule]
+  );
+
+  const moduleMetrics = useMemo(() => ([
+    { label: 'Objects', value: project?.entities?.length || 0 },
+    { label: 'Layers', value: project?.layers?.length || 0 },
+    { label: 'Selected', value: selectedEntityIds.length },
+    { label: 'Zoom', value: `${Math.round((activeViewport?.zoom || 1) * 100)}%` },
+  ]), [activeViewport?.zoom, project?.entities?.length, project?.layers?.length, selectedEntityIds.length]);
+
+  const activeLayerName = useMemo(
+    () => project?.layers?.find((layer) => layer.id === activeLayerId)?.name || activeLayerId,
+    [activeLayerId, project?.layers]
+  );
+
   if (showProjectDialog) {
     return (
       <ProjectDialog
@@ -255,167 +323,201 @@ export function App() {
   }
 
   return (
-    <div className="app">
-      <MenuBar
-        project={project}
-        onNewProject={() => setShowProjectDialog(true)}
-        onSave={handleSaveProject}
-        onTogglePNGPanel={togglePNGPanel}
-        onToggleBuildingPanel={toggleBuildingPanel}
-        onExportPDF={handleExportPDF}
-        isOffline={isOffline}
-      />
+    <div className="app-shell">
+      <div className="app-shell-glow app-shell-glow-left" />
+      <div className="app-shell-glow app-shell-glow-right" />
 
-      <div className="app-main">
-        <Toolbar
-          activeTool={activeTool}
-          onToolChange={handleToolChange}
+      <div className="app">
+        <MenuBar
+          project={project}
+          modules={MODULES}
+          activeModule={activeModule}
+          onModuleChange={handleModuleChange}
+          onNewProject={() => setShowProjectDialog(true)}
+          onSave={handleSaveProject}
+          onTogglePNGPanel={togglePNGPanel}
+          onToggleBuildingPanel={toggleBuildingPanel}
+          onExportPDF={handleExportPDF}
+          onShowKeyboardHelp={() => setShowKeyboardHelp(true)}
+          onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
+          onShowFeedback={() => setShowFeedbackForm(true)}
+          isOffline={isOffline}
         />
 
-        <div className="app-content">
-          <LayerPanel
-            layers={project?.layers || []}
-            activeLayerId={activeLayerId}
-            onLayerSelect={setActiveLayer}
+        <section className={`module-brief module-brief-${activeModule}`}>
+          <div className="module-brief-copy">
+            <p className="module-kicker">{moduleDetails.label}</p>
+            <h2>{moduleDetails.title}</h2>
+            <p>{moduleDetails.description}</p>
+          </div>
+
+          <div className="module-brief-metrics">
+            {moduleMetrics.map((metric) => (
+              <div key={metric.label} className="module-metric-card">
+                <span className="module-metric-label">{metric.label}</span>
+                <span className="module-metric-value">{metric.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="module-brief-actions">
+            <button onClick={() => setShowPNGPanel(true)}>Standards Panel</button>
+            <button onClick={() => setShowBuildingPanel(true)}>Drainage Inputs</button>
+            <button onClick={() => setShowProjectExplorer(true)}>Project Explorer</button>
+            <button className="primary" onClick={handleExportPDF}>Export PDF</button>
+          </div>
+        </section>
+
+        <div className="app-main">
+          <Toolbar
+            activeTool={activeTool}
+            onToolChange={handleToolChange}
           />
 
-          <div className="canvas-container">
-            <Canvas
-              project={project}
-              activeTool={activeTool}
+          <div className="app-content">
+            <LayerPanel
+              layers={project?.layers || []}
               activeLayerId={activeLayerId}
-            />
-          </div>
-
-          <div className="right-panels">
-            <PropertiesPanel
-              selectedEntityIds={selectedEntityIds}
-              entities={project?.entities || []}
+              onLayerSelect={setActiveLayer}
             />
 
-            {showPNGPanel && project && (
-              <PNGAnalysisPanel
+            <div className="canvas-container">
+              <Canvas
                 project={project}
-                onClose={() => setShowPNGPanel(false)}
+                activeTool={activeTool}
+                activeLayerId={activeLayerId}
               />
-            )}
+            </div>
 
-            {showBuildingPanel && (
-              <BuildingParametersPanel
-                onClose={() => setShowBuildingPanel(false)}
-                onInsertToDrawing={handleInsertBuildingEntities}
+            <div className="right-panels">
+              <PropertiesPanel
+                selectedEntityIds={selectedEntityIds}
+                entities={project?.entities || []}
               />
-            )}
 
-            {showProjectExplorer && (
-              <ProjectExplorer
-                project={project}
-                onClose={() => setShowProjectExplorer(false)}
-              />
-            )}
+              {showPNGPanel && project && (
+                <PNGAnalysisPanel
+                  project={project}
+                  onClose={() => setShowPNGPanel(false)}
+                />
+              )}
+
+              {showBuildingPanel && (
+                <BuildingParametersPanel
+                  onClose={() => setShowBuildingPanel(false)}
+                  onInsertToDrawing={handleInsertBuildingEntities}
+                />
+              )}
+
+              {showProjectExplorer && (
+                <ProjectExplorer
+                  project={project}
+                  onClose={() => setShowProjectExplorer(false)}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <StatusBar
-        activeTool={activeTool}
-        activeLayer={project?.layers?.find((layer) => layer.id === activeLayerId)?.name || activeLayerId}
-        units={project?.units?.lengthUnit || 'm'}
-        gridEnabled={Boolean(gridSettings?.visible)}
-        snapEnabled={Boolean(snapSettings?.enabled)}
-        orthoEnabled={false}
-        onToggleGrid={toggleGrid}
-        onToggleSnap={toggleSnap}
-        onToggleOrtho={() => {}}
-        selectedCount={selectedEntityIds.length}
-        entityCount={project?.entities?.length || 0}
-        layerCount={project?.layers?.length || 0}
-        zoom={activeViewport?.zoom || 1}
-        lastSaveTime={lastManualSaveTime}
-        hasUnsavedChanges={isModified}
-        isSaving={false}
-        isOffline={isOffline}
-        projectName={project?.name || 'Untitled'}
-        onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
-        onShowHelp={() => setShowKeyboardHelp(true)}
-        onShowFeedback={() => setShowFeedbackForm(true)}
-      />
+        <StatusBar
+          activeTool={activeTool}
+          activeLayer={activeLayerName}
+          units={project?.units?.lengthUnit || 'm'}
+          gridEnabled={Boolean(gridSettings?.visible)}
+          snapEnabled={Boolean(snapSettings?.enabled)}
+          orthoEnabled={false}
+          onToggleGrid={toggleGrid}
+          onToggleSnap={toggleSnap}
+          onToggleOrtho={() => {}}
+          selectedCount={selectedEntityIds.length}
+          entityCount={project?.entities?.length || 0}
+          layerCount={project?.layers?.length || 0}
+          zoom={activeViewport?.zoom || 1}
+          lastSaveTime={lastManualSaveTime}
+          hasUnsavedChanges={isModified}
+          isSaving={false}
+          isOffline={isOffline}
+          projectName={project?.name || 'Untitled'}
+          onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
+          onShowHelp={() => setShowKeyboardHelp(true)}
+          onShowFeedback={() => setShowFeedbackForm(true)}
+        />
 
-      {showKeyboardHelp && (
-        <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />
-      )}
+        {showKeyboardHelp && (
+          <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />
+        )}
 
-      {showFeedbackForm && (
-        <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
-      )}
+        {showFeedbackForm && (
+          <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
+        )}
 
-      {showSurfaceImport && (
-        <SurfaceImportPanel
-          onClose={() => setShowSurfaceImport(false)}
-          onSurfaceCreated={(surfaceData) => {
-            if (project && surfaceData.entities.length > 0) {
-              const bounds = surfaceData.bounds;
-              const centerX = (bounds.minX + bounds.maxX) / 2;
-              const centerY = (bounds.minY + bounds.maxY) / 2;
+        {showSurfaceImport && (
+          <SurfaceImportPanel
+            onClose={() => setShowSurfaceImport(false)}
+            onSurfaceCreated={(surfaceData) => {
+              if (project && surfaceData.entities.length > 0) {
+                const bounds = surfaceData.bounds;
+                const centerX = (bounds.minX + bounds.maxX) / 2;
+                const centerY = (bounds.minY + bounds.maxY) / 2;
 
-              const width = bounds.maxX - bounds.minX;
-              const height = bounds.maxY - bounds.minY;
-              const maxDimension = Math.max(width, height);
-              const canvasSize = 800;
-              const zoom = Math.min(canvasSize / (maxDimension * 1.2), 2);
+                const width = bounds.maxX - bounds.minX;
+                const height = bounds.maxY - bounds.minY;
+                const maxDimension = Math.max(width, height);
+                const canvasSize = 800;
+                const zoom = Math.min(canvasSize / (maxDimension * 1.2), 2);
 
-              const updatedViewports = (project.viewports || []).length > 0
-                ? project.viewports.map((viewport, index) => {
-                    const isTarget = viewport.isActive || index === 0;
-                    if (!isTarget) return viewport;
-                    return {
-                      ...viewport,
+                const updatedViewports = (project.viewports || []).length > 0
+                  ? project.viewports.map((viewport, index) => {
+                      const isTarget = viewport.isActive || index === 0;
+                      if (!isTarget) return viewport;
+                      return {
+                        ...viewport,
+                        zoom,
+                        // Pan is in screen pixels: shift world center to viewport center.
+                        pan: {
+                          x: -centerX * zoom,
+                          y: -centerY * zoom,
+                        },
+                      };
+                    })
+                  : [{
+                      id: 'viewport-main',
+                      name: 'Main',
+                      isActive: true,
                       zoom,
-                      // Pan is in screen pixels: shift world center to viewport center.
                       pan: {
                         x: -centerX * zoom,
                         y: -centerY * zoom,
                       },
-                    };
-                  })
-                : [{
-                    id: 'viewport-main',
-                    name: 'Main',
-                    isActive: true,
-                    zoom,
-                    pan: {
-                      x: -centerX * zoom,
-                      y: -centerY * zoom,
-                    },
-                    rotation: 0,
-                    bounds: { minX: -10000, minY: -10000, maxX: 10000, maxY: 10000 },
-                  }];
+                      rotation: 0,
+                      bounds: { minX: -10000, minY: -10000, maxX: 10000, maxY: 10000 },
+                    }];
 
-              const updatedProject = {
-                ...project,
-                entities: [...(project.entities || []), ...surfaceData.entities],
-                layers: [
-                  ...(project.layers || []),
-                  ...surfaceData.layers.filter((newLayer) =>
-                    !project.layers?.some((layer) => layer.id === newLayer.id)
-                  ),
-                ],
-                viewports: updatedViewports,
-              };
-              setProject(updatedProject);
+                const updatedProject = {
+                  ...project,
+                  entities: [...(project.entities || []), ...surfaceData.entities],
+                  layers: [
+                    ...(project.layers || []),
+                    ...surfaceData.layers.filter((newLayer) =>
+                      !project.layers?.some((layer) => layer.id === newLayer.id)
+                    ),
+                  ],
+                  viewports: updatedViewports,
+                };
+                setProject(updatedProject);
 
-              notifications.success(
-                'Surface created',
-                `${surfaceData.entities.length} entities added at (${centerX.toFixed(0)}, ${centerY.toFixed(0)}).`
-              );
-            }
-            setShowSurfaceImport(false);
-          }}
-        />
-      )}
+                notifications.success(
+                  'Surface created',
+                  `${surfaceData.entities.length} entities added at (${centerX.toFixed(0)}, ${centerY.toFixed(0)}).`
+                );
+              }
+              setShowSurfaceImport(false);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
 export default App;
-

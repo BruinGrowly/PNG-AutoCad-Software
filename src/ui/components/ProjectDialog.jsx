@@ -1,9 +1,8 @@
 /**
- * Project Dialog Component
- * New project creation and project opening
+ * Project dialog for new/open workflows.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createNewProject } from '../../core/engine.js';
 import './ProjectDialog.css';
 
@@ -37,8 +36,8 @@ const TERRAIN_TYPES = [
   { value: 'riverine-floodplain', label: 'Riverine Floodplain' },
   { value: 'highland-valley', label: 'Highland Valley' },
   { value: 'mountainous', label: 'Mountainous' },
-  { value: 'island-atoll', label: 'Island/Atoll' },
-  { value: 'swamp-wetland', label: 'Swamp/Wetland' },
+  { value: 'island-atoll', label: 'Island / Atoll' },
+  { value: 'swamp-wetland', label: 'Swamp / Wetland' },
 ];
 
 const PROJECT_TYPES = [
@@ -53,7 +52,16 @@ const PROJECT_TYPES = [
   { value: 'general', label: 'General' },
 ];
 
-export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
+const TEMPLATE_PRESETS = [
+  { id: 'residential', label: 'Residential House', projectType: 'building', note: 'Housing' },
+  { id: 'community', label: 'Community Building', projectType: 'building', note: 'Public Works' },
+  { id: 'road', label: 'Road Project', projectType: 'road', note: 'Transport' },
+  { id: 'bridge', label: 'Bridge Design', projectType: 'bridge', note: 'Structure' },
+  { id: 'water', label: 'Water Supply System', projectType: 'water-supply', note: 'Utilities' },
+  { id: 'drainage', label: 'Drainage System', projectType: 'drainage', note: 'Hydrology' },
+];
+
+export function ProjectDialog({ onNewProject, onOpenProject, recentProjects = [] }) {
   const [activeTab, setActiveTab] = useState('new');
   const [formError, setFormError] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -63,14 +71,21 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
   const [projectType, setProjectType] = useState('building');
   const [author, setAuthor] = useState('');
 
+  const openStats = useMemo(() => ({
+    recents: recentProjects.length,
+    provinces: PNG_PROVINCES.length,
+    standards: 'PNG + AU/NZ',
+  }), [recentProjects.length]);
+
   const handleCreateProject = () => {
     setFormError('');
+
     if (!projectName.trim()) {
       setFormError('Please enter a project name.');
       return;
     }
 
-    const project = createNewProject(projectName);
+    const project = createNewProject(projectName.trim());
     project.description = description;
     project.author = author;
     project.location = {
@@ -85,10 +100,30 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
   return (
     <div className="project-dialog-overlay">
       <div className="project-dialog">
-        <div className="dialog-header">
-          <h1>PNG Civil CAD</h1>
-          <p>Civil Engineering Design Software for Papua New Guinea</p>
-        </div>
+        <header className="dialog-header">
+          <div>
+            <p className="dialog-kicker">PNG Civil Engineering Standards Platform</p>
+            <h1>Start a New Project</h1>
+            <p className="dialog-subtitle">
+              Configure location-aware defaults so standards, climate, and seismic context are ready from the first line.
+            </p>
+          </div>
+
+          <div className="dialog-stat-grid">
+            <div className="dialog-stat-card">
+              <span className="dialog-stat-label">Recent Projects</span>
+              <span className="dialog-stat-value">{openStats.recents}</span>
+            </div>
+            <div className="dialog-stat-card">
+              <span className="dialog-stat-label">PNG Provinces</span>
+              <span className="dialog-stat-value">{openStats.provinces}</span>
+            </div>
+            <div className="dialog-stat-card">
+              <span className="dialog-stat-label">Standards Set</span>
+              <span className="dialog-stat-value">{openStats.standards}</span>
+            </div>
+          </div>
+        </header>
 
         <div className="dialog-tabs">
           <button
@@ -108,7 +143,7 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
         <div className="dialog-content">
           {activeTab === 'new' ? (
             <div className="new-project-form">
-              <div className="form-section">
+              <section className="form-section">
                 <h3>Project Information</h3>
 
                 {formError && (
@@ -117,16 +152,33 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
                   </div>
                 )}
 
-                <div className="form-group">
-                  <label htmlFor="projectName">Project Name *</label>
-                  <input
-                    id="projectName"
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="Enter project name"
-                    autoFocus
-                  />
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="projectName">Project Name *</label>
+                    <input
+                      id="projectName"
+                      type="text"
+                      value={projectName}
+                      onChange={(event) => setProjectName(event.target.value)}
+                      placeholder="Enter project name"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="projectType">Project Type</label>
+                    <select
+                      id="projectType"
+                      value={projectType}
+                      onChange={(event) => setProjectType(event.target.value)}
+                    >
+                      {PROJECT_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -134,8 +186,8 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
                   <textarea
                     id="description"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Project description"
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="Project summary and scope"
                     rows={3}
                   />
                 </div>
@@ -146,133 +198,69 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
                     id="author"
                     type="text"
                     value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    placeholder="Your name"
+                    onChange={(event) => setAuthor(event.target.value)}
+                    placeholder="Name or team"
                   />
                 </div>
+              </section>
 
-                <div className="form-group">
-                  <label htmlFor="projectType">Project Type</label>
-                  <select
-                    id="projectType"
-                    value={projectType}
-                    onChange={(e) => setProjectType(e.target.value)}
-                  >
-                    {PROJECT_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <section className="form-section">
+                <h3>Site Context (PNG)</h3>
 
-              <div className="form-section">
-                <h3>Location (PNG-Specific)</h3>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="province">Province</label>
+                    <select
+                      id="province"
+                      value={province}
+                      onChange={(event) => setProvince(event.target.value)}
+                    >
+                      {PNG_PROVINCES.map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="province">Province</label>
-                  <select
-                    id="province"
-                    value={province}
-                    onChange={(e) => setProvince(e.target.value)}
-                  >
-                    {PNG_PROVINCES.map((prov) => (
-                      <option key={prov} value={prov}>
-                        {prov}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="terrainType">Terrain Type</label>
-                  <select
-                    id="terrainType"
-                    value={terrainType}
-                    onChange={(e) => setTerrainType(e.target.value)}
-                  >
-                    {TERRAIN_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="form-group">
+                    <label htmlFor="terrainType">Terrain Type</label>
+                    <select
+                      id="terrainType"
+                      value={terrainType}
+                      onChange={(event) => setTerrainType(event.target.value)}
+                    >
+                      {TERRAIN_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="location-info">
-                  <p>
-                    Setting the correct location helps provide accurate climate, seismic, and
-                    flood analysis for your project.
-                  </p>
+                  Correct location and terrain improve flood, climate, and seismic analysis guidance.
                 </div>
-              </div>
+              </section>
 
-              <div className="form-section templates">
+              <section className="form-section templates">
                 <h3>Quick Start Templates</h3>
                 <div className="template-grid">
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Residential House');
-                      setProjectType('building');
-                    }}
-                  >
-                    <span className="template-icon">🏠</span>
-                    <span className="template-name">Residential House</span>
-                  </button>
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Community Building');
-                      setProjectType('building');
-                    }}
-                  >
-                    <span className="template-icon">🏛</span>
-                    <span className="template-name">Community Building</span>
-                  </button>
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Road Project');
-                      setProjectType('road');
-                    }}
-                  >
-                    <span className="template-icon">🛣</span>
-                    <span className="template-name">Road</span>
-                  </button>
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Bridge Design');
-                      setProjectType('bridge');
-                    }}
-                  >
-                    <span className="template-icon">🌉</span>
-                    <span className="template-name">Bridge</span>
-                  </button>
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Water Supply System');
-                      setProjectType('water-supply');
-                    }}
-                  >
-                    <span className="template-icon">💧</span>
-                    <span className="template-name">Water Supply</span>
-                  </button>
-                  <button
-                    className="template-card"
-                    onClick={() => {
-                      setProjectName('Drainage System');
-                      setProjectType('drainage');
-                    }}
-                  >
-                    <span className="template-icon">🌊</span>
-                    <span className="template-name">Drainage</span>
-                  </button>
+                  {TEMPLATE_PRESETS.map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      className="template-card"
+                      onClick={() => {
+                        setProjectName(template.label);
+                        setProjectType(template.projectType);
+                      }}
+                    >
+                      <span className="template-note">{template.note}</span>
+                      <span className="template-name">{template.label}</span>
+                    </button>
+                  ))}
                 </div>
-              </div>
+              </section>
 
               <div className="form-actions">
                 <button className="primary-btn" onClick={handleCreateProject}>
@@ -282,50 +270,45 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
             </div>
           ) : (
             <div className="open-project">
-              <div className="recent-projects">
+              <section className="recent-projects">
                 <h3>Recent Projects</h3>
                 {recentProjects.length > 0 ? (
                   <div className="project-list">
-                    {recentProjects.map((project) => (
-                      <div
-                        key={project.id}
+                    {recentProjects.map((recentProject) => (
+                      <button
+                        type="button"
+                        key={recentProject.id}
                         className="project-item"
-                        onClick={() => onOpenProject(project.id)}
+                        onClick={() => onOpenProject(recentProject.id)}
                       >
-                        <span className="project-name">{project.name}</span>
+                        <span className="project-name">{recentProject.name}</span>
                         <span className="project-date">
-                          {new Date(project.modifiedAt).toLocaleDateString()}
+                          {new Date(recentProject.modifiedAt).toLocaleDateString()}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="no-projects">No recent projects found</p>
+                  <p className="no-projects">No recent projects found.</p>
                 )}
-              </div>
+              </section>
 
-              <div className="import-section">
+              <section className="import-section">
                 <h3>Import Project</h3>
-                <p>Import a project from file:</p>
+                <p>Import from your existing civil design workflow.</p>
                 <div className="import-buttons">
-                  <button className="import-btn">
-                    <span>📁</span> Import .pngcad
-                  </button>
-                  <button className="import-btn">
-                    <span>📐</span> Import DXF
-                  </button>
-                  <button className="import-btn">
-                    <span>📄</span> Import DWG
-                  </button>
+                  <button type="button" className="import-btn">Import .pngcad</button>
+                  <button type="button" className="import-btn">Import DXF</button>
+                  <button type="button" className="import-btn">Import DWG</button>
                 </div>
-              </div>
+              </section>
             </div>
           )}
         </div>
 
-        <div className="dialog-footer">
-          <p>PNG Civil CAD v1.0 - Designed for Papua New Guinea conditions</p>
-        </div>
+        <footer className="dialog-footer">
+          PNG AutoCAD Workspace | standards-first civil engineering for Papua New Guinea
+        </footer>
       </div>
     </div>
   );
