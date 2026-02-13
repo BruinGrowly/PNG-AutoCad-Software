@@ -22,9 +22,11 @@ export function MenuBar({
   project,
   modules = [],
   activeModule = 'workspace',
+  workspaceMode = 'draft',
   onModuleChange,
   onNewProject,
   onSave,
+  onSetWorkspaceMode,
   onTogglePNGPanel,
   onToggleBuildingPanel,
   onExportPDF,
@@ -63,6 +65,9 @@ export function MenuBar({
     'save',
     'undo',
     'redo',
+    'focus mode',
+    'review mode',
+    'draft mode',
     'toggle grid',
     'toggle snap',
     'standards',
@@ -144,6 +149,15 @@ export function MenuBar({
     } else if (command.includes('workspace')) {
       onModuleChange?.('workspace');
       response = 'Workspace module opened.';
+    } else if (command.includes('focus mode') || command === 'focus') {
+      onSetWorkspaceMode?.('focus');
+      response = 'Workspace mode set to focus.';
+    } else if (command.includes('review mode') || command === 'review') {
+      onSetWorkspaceMode?.('review');
+      response = 'Workspace mode set to review.';
+    } else if (command.includes('draft mode') || command === 'draft') {
+      onSetWorkspaceMode?.('draft');
+      response = 'Workspace mode set to draft.';
     } else if (command.includes('explorer')) {
       onToggleExplorer?.();
       response = 'Project explorer toggled.';
@@ -246,6 +260,12 @@ export function MenuBar({
             Snap
           </button>
           <button onClick={() => onModuleChange?.('standards')}>Standards</button>
+          <button
+            className={workspaceMode === 'focus' ? 'toggled' : ''}
+            onClick={() => onSetWorkspaceMode?.('focus')}
+          >
+            Focus
+          </button>
           <button onClick={onShowCommandPalette}>Command</button>
           <button onClick={onToggleExplorer}>Explorer</button>
           <button onClick={onShowKeyboardHelp}>Help</button>

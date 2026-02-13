@@ -57,6 +57,43 @@ const MODULES = [
   },
 ];
 
+const WORKSPACE_MODE_STORAGE_KEY = 'pngcad-workspace-mode-v1';
+
+const WORKSPACE_MODES = [
+  {
+    id: 'draft',
+    label: 'Draft',
+    description: 'Balanced layout for day-to-day drawing work.',
+  },
+  {
+    id: 'focus',
+    label: 'Focus',
+    description: 'Canvas-first mode with distraction-free drafting.',
+  },
+  {
+    id: 'review',
+    label: 'Review',
+    description: 'Inspector-heavy mode for QA and standards checks.',
+  },
+];
+
+function getInitialWorkspaceMode() {
+  if (typeof window === 'undefined') {
+    return 'draft';
+  }
+
+  try {
+    const storedMode = window.localStorage.getItem(WORKSPACE_MODE_STORAGE_KEY);
+    if (WORKSPACE_MODES.some((mode) => mode.id === storedMode)) {
+      return storedMode;
+    }
+  } catch {
+    // Ignore localStorage access errors and fall back to default mode.
+  }
+
+  return 'draft';
+}
+
 export function App() {
   const [showProjectDialog, setShowProjectDialog] = useState(true);
   const [showPNGPanel, setShowPNGPanel] = useState(false);
@@ -66,6 +103,7 @@ export function App() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showSurfaceImport, setShowSurfaceImport] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState(getInitialWorkspaceMode);
   const [activeModule, setActiveModule] = useState('workspace');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastManualSaveTime, setLastManualSaveTime] = useState(null);
@@ -118,6 +156,16 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      window.localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, workspaceMode);
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }, [workspaceMode]);
+
   // Auto-save every minute.
   useEffect(() => {
     if (!project) return;
@@ -162,9 +210,18 @@ export function App() {
     panTool: () => setActiveTool('pan'),
     zoomTool: () => setActiveTool('zoom'),
     arcTool: () => setActiveTool('arc'),
-    toggleExplorer: () => setShowProjectExplorer((prev) => !prev),
+    toggleExplorer: () => setShowProjectExplorer((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    }),
     showHelp: () => setShowKeyboardHelp(true),
     openCommandPalette: () => setShowCommandPalette(true),
+    workspaceDraftMode: () => setWorkspaceMode('draft'),
+    workspaceFocusMode: () => setWorkspaceMode('focus'),
+    workspaceReviewMode: () => setWorkspaceMode('review'),
     toggleGrid,
     toggleSnap,
   }), [
@@ -182,6 +239,7 @@ export function App() {
     toggleGrid,
     toggleSnap,
     undo,
+    workspaceMode,
   ]);
 
   const keyboardShortcuts = useMemo(() => ([
@@ -210,6 +268,9 @@ export function App() {
     { key: 'e', action: 'toggleExplorer' },
     { key: 'F1', action: 'showHelp' },
     { key: '?', shift: true, action: 'showHelp' },
+    { key: '1', alt: true, action: 'workspaceDraftMode' },
+    { key: '2', alt: true, action: 'workspaceFocusMode' },
+    { key: '3', alt: true, action: 'workspaceReviewMode' },
     { key: 'g', action: 'toggleGrid' },
     { key: 's', action: 'toggleSnap' },
   ]), []);
@@ -248,6 +309,10 @@ export function App() {
   const handleModuleChange = useCallback((moduleId) => {
     setActiveModule(moduleId);
 
+    if (workspaceMode === 'focus' && moduleId !== 'workspace') {
+      setWorkspaceMode('review');
+    }
+
     if (moduleId === 'standards' || moduleId === 'qa') {
       setShowPNGPanel(true);
     }
@@ -260,15 +325,27 @@ export function App() {
     if (moduleId === 'reports') {
       setShowProjectExplorer(true);
     }
-  }, []);
+  }, [workspaceMode]);
 
   const togglePNGPanel = useCallback(() => {
-    setShowPNGPanel((prev) => !prev);
-  }, []);
+    setShowPNGPanel((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
+  }, [workspaceMode]);
 
   const toggleBuildingPanel = useCallback(() => {
-    setShowBuildingPanel((prev) => !prev);
-  }, []);
+    setShowBuildingPanel((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
+  }, [workspaceMode]);
 
   const openProjectDialog = useCallback(() => {
     setShowCommandPalette(false);
@@ -315,6 +392,11 @@ export function App() {
     [activeModule]
   );
 
+  const workspaceModeDetails = useMemo(
+    () => WORKSPACE_MODES.find((mode) => mode.id === workspaceMode) || WORKSPACE_MODES[0],
+    [workspaceMode]
+  );
+
   const moduleMetrics = useMemo(() => ([
     { label: 'Objects', value: project?.entities?.length || 0 },
     { label: 'Layers', value: project?.layers?.length || 0 },
@@ -327,10 +409,59 @@ export function App() {
     [activeLayerId, project?.layers]
   );
 
+  const openStandardsPanel = useCallback(() => {
+    setShowPNGPanel(true);
+    if (workspaceMode === 'focus') {
+      setWorkspaceMode('review');
+    }
+  }, [workspaceMode]);
+
+  const openBuildingPanel = useCallback(() => {
+    setShowBuildingPanel(true);
+    if (workspaceMode === 'focus') {
+      setWorkspaceMode('review');
+    }
+  }, [workspaceMode]);
+
+  const openExplorerPanel = useCallback(() => {
+    setShowProjectExplorer(true);
+    if (workspaceMode === 'focus') {
+      setWorkspaceMode('review');
+    }
+  }, [workspaceMode]);
+
+  const toggleExplorerPanel = useCallback(() => {
+    setShowProjectExplorer((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
+  }, [workspaceMode]);
+
   const commandPaletteActions = useMemo(() => {
-    const togglePNG = () => setShowPNGPanel((prev) => !prev);
-    const toggleBuilding = () => setShowBuildingPanel((prev) => !prev);
-    const toggleExplorer = () => setShowProjectExplorer((prev) => !prev);
+    const togglePNG = () => setShowPNGPanel((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
+    const toggleBuilding = () => setShowBuildingPanel((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
+    const toggleExplorer = () => setShowProjectExplorer((prev) => {
+      const next = !prev;
+      if (next && workspaceMode === 'focus') {
+        setWorkspaceMode('review');
+      }
+      return next;
+    });
 
     return [
       {
@@ -383,6 +514,30 @@ export function App() {
         label: 'Switch to Reports',
         keywords: ['module', 'reports'],
         onSelect: () => handleModuleChange('reports'),
+      },
+      {
+        id: 'workspace-mode-draft',
+        group: 'Workspace',
+        label: `Set Workspace Mode: Draft${workspaceMode === 'draft' ? ' (Current)' : ''}`,
+        shortcut: 'Alt+1',
+        keywords: ['workspace', 'mode', 'draft', 'layout'],
+        onSelect: () => setWorkspaceMode('draft'),
+      },
+      {
+        id: 'workspace-mode-focus',
+        group: 'Workspace',
+        label: `Set Workspace Mode: Focus${workspaceMode === 'focus' ? ' (Current)' : ''}`,
+        shortcut: 'Alt+2',
+        keywords: ['workspace', 'mode', 'focus', 'canvas'],
+        onSelect: () => setWorkspaceMode('focus'),
+      },
+      {
+        id: 'workspace-mode-review',
+        group: 'Workspace',
+        label: `Set Workspace Mode: Review${workspaceMode === 'review' ? ' (Current)' : ''}`,
+        shortcut: 'Alt+3',
+        keywords: ['workspace', 'mode', 'review', 'qa', 'panels'],
+        onSelect: () => setWorkspaceMode('review'),
       },
       {
         id: 'tool-select',
@@ -541,6 +696,7 @@ export function App() {
     toggleGrid,
     toggleSnap,
     undo,
+    workspaceMode,
   ]);
 
   if (showProjectDialog) {
@@ -558,19 +714,21 @@ export function App() {
       <div className="app-shell-glow app-shell-glow-left" />
       <div className="app-shell-glow app-shell-glow-right" />
 
-      <div className="app">
+      <div className={`app app-mode-${workspaceMode}`}>
         <MenuBar
           project={project}
           modules={MODULES}
           activeModule={activeModule}
+          workspaceMode={workspaceMode}
           onModuleChange={handleModuleChange}
           onNewProject={openProjectDialog}
           onSave={handleSaveProject}
+          onSetWorkspaceMode={setWorkspaceMode}
           onTogglePNGPanel={togglePNGPanel}
           onToggleBuildingPanel={toggleBuildingPanel}
           onExportPDF={handleExportPDF}
           onShowKeyboardHelp={() => setShowKeyboardHelp(true)}
-          onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
+          onToggleExplorer={toggleExplorerPanel}
           onShowFeedback={() => setShowFeedbackForm(true)}
           onShowCommandPalette={() => setShowCommandPalette(true)}
           isOffline={isOffline}
@@ -581,6 +739,9 @@ export function App() {
             <p className="module-kicker">{moduleDetails.label}</p>
             <h2>{moduleDetails.title}</h2>
             <p>{moduleDetails.description}</p>
+            <p className="workspace-mode-caption">
+              Mode: <strong>{workspaceModeDetails.label}</strong> | {workspaceModeDetails.description}
+            </p>
           </div>
 
           <div className="module-brief-metrics">
@@ -593,9 +754,20 @@ export function App() {
           </div>
 
           <div className="module-brief-actions">
-            <button onClick={() => setShowPNGPanel(true)}>Standards Panel</button>
-            <button onClick={() => setShowBuildingPanel(true)}>Drainage Inputs</button>
-            <button onClick={() => setShowProjectExplorer(true)}>Project Explorer</button>
+            <div className="workspace-mode-switch" role="group" aria-label="Workspace mode switch">
+              {WORKSPACE_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  className={`workspace-mode-button ${workspaceMode === mode.id ? 'active' : ''}`}
+                  onClick={() => setWorkspaceMode(mode.id)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={openStandardsPanel}>Standards Panel</button>
+            <button onClick={openBuildingPanel}>Drainage Inputs</button>
+            <button onClick={openExplorerPanel}>Project Explorer</button>
             <button onClick={() => setShowCommandPalette(true)}>Command Palette</button>
             <button className="primary" onClick={handleExportPDF}>Export PDF</button>
           </div>
@@ -607,12 +779,14 @@ export function App() {
             onToolChange={handleToolChange}
           />
 
-          <div className="app-content">
-            <LayerPanel
-              layers={project?.layers || []}
-              activeLayerId={activeLayerId}
-              onLayerSelect={setActiveLayer}
-            />
+          <div className={`app-content app-content-mode-${workspaceMode}`}>
+            {workspaceMode !== 'focus' && (
+              <LayerPanel
+                layers={project?.layers || []}
+                activeLayerId={activeLayerId}
+                onLayerSelect={setActiveLayer}
+              />
+            )}
 
             <div className="canvas-container">
               <Canvas
@@ -620,35 +794,45 @@ export function App() {
                 activeTool={activeTool}
                 activeLayerId={activeLayerId}
               />
-            </div>
 
-            <div className="right-panels">
-              <PropertiesPanel
-                selectedEntityIds={selectedEntityIds}
-                entities={project?.entities || []}
-              />
-
-              {showPNGPanel && project && (
-                <PNGAnalysisPanel
-                  project={project}
-                  onClose={() => setShowPNGPanel(false)}
-                />
-              )}
-
-              {showBuildingPanel && (
-                <BuildingParametersPanel
-                  onClose={() => setShowBuildingPanel(false)}
-                  onInsertToDrawing={handleInsertBuildingEntities}
-                />
-              )}
-
-              {showProjectExplorer && (
-                <ProjectExplorer
-                  project={project}
-                  onClose={() => setShowProjectExplorer(false)}
-                />
+              {workspaceMode === 'focus' && (
+                <div className="focus-mode-dock">
+                  <span className="focus-mode-tag">Focus Mode</span>
+                  <button onClick={() => setShowCommandPalette(true)}>Commands</button>
+                  <button onClick={() => setWorkspaceMode('draft')}>Exit Focus</button>
+                </div>
               )}
             </div>
+
+            {workspaceMode !== 'focus' && (
+              <div className="right-panels">
+                <PropertiesPanel
+                  selectedEntityIds={selectedEntityIds}
+                  entities={project?.entities || []}
+                />
+
+                {showPNGPanel && project && (
+                  <PNGAnalysisPanel
+                    project={project}
+                    onClose={() => setShowPNGPanel(false)}
+                  />
+                )}
+
+                {showBuildingPanel && (
+                  <BuildingParametersPanel
+                    onClose={() => setShowBuildingPanel(false)}
+                    onInsertToDrawing={handleInsertBuildingEntities}
+                  />
+                )}
+
+                {showProjectExplorer && (
+                  <ProjectExplorer
+                    project={project}
+                    onClose={() => setShowProjectExplorer(false)}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -671,7 +855,7 @@ export function App() {
           isSaving={false}
           isOffline={isOffline}
           projectName={project?.name || 'Untitled'}
-          onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
+          onToggleExplorer={toggleExplorerPanel}
           onShowHelp={() => setShowKeyboardHelp(true)}
           onShowFeedback={() => setShowFeedbackForm(true)}
         />
