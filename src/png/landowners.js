@@ -7,18 +7,7 @@
  * Context: 97% of PNG land is under customary tenure.
  * Land disputes are the #1 cause of infrastructure project delays.
  */
-
-// ============================================
-// Unique ID Generator
-// ============================================
-
-function generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
+import { generateId } from '../core/id.js';
 
 // ============================================
 // Province and LLG Data

@@ -5,6 +5,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './ui/App.jsx';
+import { NotificationProvider } from './ui/components/Notifications.jsx';
 import './ui/styles/App.css';
 
 // Register service worker for offline support (optional)
@@ -18,6 +19,8 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <NotificationProvider>
+      <App />
+    </NotificationProvider>
   </React.StrictMode>
 );

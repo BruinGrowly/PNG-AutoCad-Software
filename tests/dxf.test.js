@@ -152,6 +152,41 @@ describe('DXF Export', () => {
       expect(dxf).toContain('LWPOLYLINE');
     });
 
+    it('exports hatch entities with explicit boundary', () => {
+      mockProject.entities = [
+        {
+          type: 'hatch',
+          layerId: 'layer-0',
+          visible: true,
+          boundary: [
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+            { x: 100, y: 100 },
+            { x: 0, y: 100 },
+          ],
+          style: { strokeColor: '#000000' },
+        },
+      ];
+
+      const dxf = exportToDXF(mockProject);
+
+      expect(dxf).toContain('LWPOLYLINE');
+    });
+
+    it('skips legacy hatch entities without boundary instead of throwing', () => {
+      mockProject.entities = [
+        {
+          type: 'hatch',
+          layerId: 'layer-0',
+          visible: true,
+          boundaryId: 'poly-1',
+          style: { strokeColor: '#000000' },
+        },
+      ];
+
+      expect(() => exportToDXF(mockProject)).not.toThrow();
+    });
+
     it('exports dimension entities', () => {
       mockProject.entities = [
         {

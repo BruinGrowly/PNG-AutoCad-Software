@@ -2,7 +2,7 @@
  * PNG Civil Engineering CAD - Main Application Component
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Canvas } from './components/Canvas.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { LayerPanel } from './components/LayerPanel.jsx';
@@ -14,9 +14,10 @@ import { MenuBar } from './components/MenuBar.jsx';
 import { StatusBar } from './components/StatusBar.jsx';
 import { ProjectExplorer } from './components/ProjectExplorer.jsx';
 import { KeyboardHelp } from './components/KeyboardHelp.jsx';
-import { ContextMenu } from './components/ContextMenu.jsx';
 import { FeedbackForm } from './components/FeedbackForm.jsx';
 import { SurfaceImportPanel } from './components/SurfaceImportPanel.jsx';
+import { useNotifications } from './components/Notifications.jsx';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useCADStore } from './store/cadStore.js';
 import { useOfflineStorage } from './hooks/useOfflineStorage.js';
 import { exportToPDF } from '../core/pdfExport.js';
@@ -30,28 +31,44 @@ export function App() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showSurfaceImport, setShowSurfaceImport] = useState(false);
-  const [contextMenu, setContextMenu] = useState(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [lastManualSaveTime, setLastManualSaveTime] = useState(null);
+
+  const notifications = useNotifications();
 
   const {
     project,
+    isModified,
     activeTool,
     selectedEntityIds,
     activeLayerId,
-    clipboard,
+    gridSettings,
+    snapSettings,
     setProject,
     setActiveTool,
     setActiveLayer,
     deleteSelectedEntities,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     copy,
+    cut,
     paste,
     selectAll,
     clearSelection,
+    toggleGrid,
+    toggleSnap,
   } = useCADStore();
 
   const { saveProject, loadProject, getRecentProjects } = useOfflineStorage();
 
-  // Handle online/offline status
+  const activeViewport = useMemo(
+    () => project?.viewports?.find((viewport) => viewport.isActive) || project?.viewports?.[0] || null,
+    [project]
+  );
+
+  // Handle online/offline status.
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
@@ -65,92 +82,104 @@ export function App() {
     };
   }, []);
 
-  // Auto-save functionality
+  // Auto-save every minute.
   useEffect(() => {
     if (!project) return;
 
     const autoSaveInterval = setInterval(() => {
       saveProject(project);
-    }, 60000); // Auto-save every minute
+    }, 60000);
 
     return () => clearInterval(autoSaveInterval);
   }, [project, saveProject]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + key shortcuts
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 's':
-            e.preventDefault();
-            if (project) saveProject(project);
-            break;
-          case 'z':
-            e.preventDefault();
-            // Undo handled by store
-            break;
-          case 'y':
-            e.preventDefault();
-            // Redo handled by store
-            break;
-          case 'a':
-            e.preventDefault();
-            // Select all
-            break;
-        }
-      } else {
-        // Tool shortcuts
-        switch (e.key.toLowerCase()) {
-          case 'v':
-          case 'escape':
-            setActiveTool('select');
-            break;
-          case 'l':
-            setActiveTool('line');
-            break;
-          case 'c':
-            setActiveTool('circle');
-            break;
-          case 'r':
-            setActiveTool('rectangle');
-            break;
-          case 'p':
-            setActiveTool('polyline');
-            break;
-          case 't':
-            setActiveTool('text');
-            break;
-          case 'd':
-            setActiveTool('dimension');
-            break;
-          case 'm':
-            setActiveTool('measure');
-            break;
-          case 'h':
-            setActiveTool('pan');
-            break;
-          case 'z':
-            setActiveTool('zoom');
-            break;
-          case 'a':
-            setActiveTool('arc');
-            break;
-          case 'e':
-            setShowProjectExplorer(prev => !prev);
-            break;
-          case '?':
-          case 'f1':
-            e.preventDefault();
-            setShowKeyboardHelp(true);
-            break;
-        }
-      }
-    };
+  const handleSaveProject = useCallback(async () => {
+    if (!project) return;
+    const saved = await saveProject(project);
+    if (saved) {
+      setLastManualSaveTime(new Date());
+      return;
+    }
+    notifications.error('Save failed', 'Project could not be saved.');
+  }, [notifications, project, saveProject]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [project, saveProject, setActiveTool]);
+  const keyboardHandlers = useMemo(() => ({
+    saveProject: handleSaveProject,
+    undo: () => canUndo() && undo(),
+    redo: () => canRedo() && redo(),
+    selectAll,
+    copy,
+    cut,
+    paste: () => paste(),
+    deleteSelected: deleteSelectedEntities,
+    selectTool: () => {
+      clearSelection();
+      setActiveTool('select');
+    },
+    lineTool: () => setActiveTool('line'),
+    circleTool: () => setActiveTool('circle'),
+    rectangleTool: () => setActiveTool('rectangle'),
+    polylineTool: () => setActiveTool('polyline'),
+    textTool: () => setActiveTool('text'),
+    dimensionTool: () => setActiveTool('dimension'),
+    measureTool: () => setActiveTool('measure'),
+    panTool: () => setActiveTool('pan'),
+    zoomTool: () => setActiveTool('zoom'),
+    arcTool: () => setActiveTool('arc'),
+    toggleExplorer: () => setShowProjectExplorer((prev) => !prev),
+    showHelp: () => setShowKeyboardHelp(true),
+    toggleGrid,
+    toggleSnap,
+  }), [
+    canRedo,
+    canUndo,
+    clearSelection,
+    copy,
+    cut,
+    deleteSelectedEntities,
+    handleSaveProject,
+    paste,
+    redo,
+    selectAll,
+    setActiveTool,
+    toggleGrid,
+    toggleSnap,
+    undo,
+  ]);
+
+  const keyboardShortcuts = useMemo(() => ([
+    { key: 's', ctrl: true, action: 'saveProject' },
+    { key: 'z', ctrl: true, action: 'undo' },
+    { key: 'y', ctrl: true, action: 'redo' },
+    { key: 'z', ctrl: true, shift: true, action: 'redo' },
+    { key: 'a', ctrl: true, action: 'selectAll' },
+    { key: 'c', ctrl: true, action: 'copy' },
+    { key: 'x', ctrl: true, action: 'cut' },
+    { key: 'v', ctrl: true, action: 'paste' },
+    { key: 'Delete', action: 'deleteSelected' },
+    { key: 'Escape', action: 'selectTool' },
+    { key: 'v', action: 'selectTool' },
+    { key: 'l', action: 'lineTool' },
+    { key: 'c', action: 'circleTool' },
+    { key: 'r', action: 'rectangleTool' },
+    { key: 'p', action: 'polylineTool' },
+    { key: 't', action: 'textTool' },
+    { key: 'd', action: 'dimensionTool' },
+    { key: 'm', action: 'measureTool' },
+    { key: 'h', action: 'panTool' },
+    { key: 'z', action: 'zoomTool' },
+    { key: 'a', action: 'arcTool' },
+    { key: 'e', action: 'toggleExplorer' },
+    { key: 'F1', action: 'showHelp' },
+    { key: '?', shift: true, action: 'showHelp' },
+    { key: 'g', action: 'toggleGrid' },
+    { key: 's', action: 'toggleSnap' },
+  ]), []);
+
+  useKeyboardShortcuts(keyboardHandlers, {
+    enabled: !showProjectDialog,
+    shortcuts: keyboardShortcuts,
+  });
 
   const handleNewProject = useCallback((newProject) => {
     setProject(newProject);
@@ -162,24 +191,26 @@ export function App() {
     if (loadedProject) {
       setProject(loadedProject);
       setShowProjectDialog(false);
+      notifications.success('Project opened', loadedProject.name);
+      return;
     }
-  }, [loadProject, setProject]);
+    notifications.error('Open failed', 'Could not load selected project.');
+  }, [loadProject, notifications, setProject]);
 
   const handleToolChange = useCallback((tool) => {
     if (tool === 'surface') {
-      // Open surface import panel instead of setting tool
       setShowSurfaceImport(true);
-    } else {
-      setActiveTool(tool);
+      return;
     }
+    setActiveTool(tool);
   }, [setActiveTool]);
 
   const togglePNGPanel = useCallback(() => {
-    setShowPNGPanel(prev => !prev);
+    setShowPNGPanel((prev) => !prev);
   }, []);
 
   const toggleBuildingPanel = useCallback(() => {
-    setShowBuildingPanel(prev => !prev);
+    setShowBuildingPanel((prev) => !prev);
   }, []);
 
   const handleExportPDF = useCallback(async () => {
@@ -228,7 +259,7 @@ export function App() {
       <MenuBar
         project={project}
         onNewProject={() => setShowProjectDialog(true)}
-        onSave={() => project && saveProject(project)}
+        onSave={handleSaveProject}
         onTogglePNGPanel={togglePNGPanel}
         onToggleBuildingPanel={toggleBuildingPanel}
         onExportPDF={handleExportPDF}
@@ -288,70 +319,95 @@ export function App() {
 
       <StatusBar
         activeTool={activeTool}
+        activeLayer={project?.layers?.find((layer) => layer.id === activeLayerId)?.name || activeLayerId}
+        units={project?.units?.lengthUnit || 'm'}
+        gridEnabled={Boolean(gridSettings?.visible)}
+        snapEnabled={Boolean(snapSettings?.enabled)}
+        orthoEnabled={false}
+        onToggleGrid={toggleGrid}
+        onToggleSnap={toggleSnap}
+        onToggleOrtho={() => {}}
         selectedCount={selectedEntityIds.length}
         entityCount={project?.entities?.length || 0}
         layerCount={project?.layers?.length || 0}
-        zoom={project?.viewports[0]?.zoom || 1}
+        zoom={activeViewport?.zoom || 1}
+        lastSaveTime={lastManualSaveTime}
+        hasUnsavedChanges={isModified}
+        isSaving={false}
         isOffline={isOffline}
         projectName={project?.name || 'Untitled'}
-        onToggleExplorer={() => setShowProjectExplorer(prev => !prev)}
+        onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
         onShowHelp={() => setShowKeyboardHelp(true)}
         onShowFeedback={() => setShowFeedbackForm(true)}
       />
 
-      {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
         <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />
       )}
 
-      {/* Feedback Form Overlay */}
       {showFeedbackForm && (
         <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
       )}
 
-      {/* Surface Import Panel */}
       {showSurfaceImport && (
         <SurfaceImportPanel
           onClose={() => setShowSurfaceImport(false)}
           onSurfaceCreated={(surfaceData) => {
-            // Add surface entities to project
             if (project && surfaceData.entities.length > 0) {
-              // Calculate center of surface bounds
               const bounds = surfaceData.bounds;
               const centerX = (bounds.minX + bounds.maxX) / 2;
               const centerY = (bounds.minY + bounds.maxY) / 2;
 
-              // Calculate zoom to fit (add some padding)
               const width = bounds.maxX - bounds.minX;
               const height = bounds.maxY - bounds.minY;
               const maxDimension = Math.max(width, height);
-              const canvasSize = 800; // Approximate canvas size
-              const zoom = Math.min(canvasSize / (maxDimension * 1.2), 2); // Cap at 2x zoom
+              const canvasSize = 800;
+              const zoom = Math.min(canvasSize / (maxDimension * 1.2), 2);
+
+              const updatedViewports = (project.viewports || []).length > 0
+                ? project.viewports.map((viewport, index) => {
+                    const isTarget = viewport.isActive || index === 0;
+                    if (!isTarget) return viewport;
+                    return {
+                      ...viewport,
+                      zoom,
+                      // Pan is in screen pixels: shift world center to viewport center.
+                      pan: {
+                        x: -centerX * zoom,
+                        y: -centerY * zoom,
+                      },
+                    };
+                  })
+                : [{
+                    id: 'viewport-main',
+                    name: 'Main',
+                    isActive: true,
+                    zoom,
+                    pan: {
+                      x: -centerX * zoom,
+                      y: -centerY * zoom,
+                    },
+                    rotation: 0,
+                    bounds: { minX: -10000, minY: -10000, maxX: 10000, maxY: 10000 },
+                  }];
 
               const updatedProject = {
                 ...project,
                 entities: [...(project.entities || []), ...surfaceData.entities],
                 layers: [
                   ...(project.layers || []),
-                  ...surfaceData.layers.filter(newLayer =>
-                    !project.layers?.some(l => l.id === newLayer.id)
+                  ...surfaceData.layers.filter((newLayer) =>
+                    !project.layers?.some((layer) => layer.id === newLayer.id)
                   ),
                 ],
-                // Update viewport to show the surface
-                viewports: [{
-                  ...(project.viewports?.[0] || {}),
-                  panX: centerX,
-                  panY: centerY,
-                  zoom: zoom,
-                }],
+                viewports: updatedViewports,
               };
               setProject(updatedProject);
 
-              // Alert user about the surface
-              alert(`Surface created!\n\n` +
-                `• ${surfaceData.entities.length} entities added\n` +
-                `• Center: (${centerX.toFixed(0)}, ${centerY.toFixed(0)})\n` +
-                `• Zoom adjusted to show surface`);
+              notifications.success(
+                'Surface created',
+                `${surfaceData.entities.length} entities added at (${centerX.toFixed(0)}, ${centerY.toFixed(0)}).`
+              );
             }
             setShowSurfaceImport(false);
           }}
@@ -362,3 +418,4 @@ export function App() {
 }
 
 export default App;
+

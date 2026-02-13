@@ -91,6 +91,16 @@
   color: var(--text-color);
 }
 
+.project-dialog-error {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 12px;
+}
+
 .form-group {
   margin-bottom: 12px;
 }

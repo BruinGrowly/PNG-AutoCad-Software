@@ -4,18 +4,23 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useNotifications } from './Notifications.jsx';
 import { useCADStore } from '../store/cadStore.js';
 import { screenToWorld, worldToScreen, snapToGrid, trimEntity, extendEntity } from '../../core/engine.js';
 import { distance, midpoint } from '../../core/geometry.js';
+import { createHatchFromEntity } from '../../core/hatch.js';
+import { generateId } from '../../core/id.js';
 import './Canvas.css';
 
 export function Canvas({ project, activeTool, activeLayerId }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const panStartRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [worldMousePos, setWorldMousePos] = useState({ x: 0, y: 0 });
   const [cuttingEdge, setCuttingEdge] = useState(null);  // For trim/extend tools
+  const notifications = useNotifications();
 
   const {
     isDrawing,
@@ -624,11 +629,21 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         y: e.clientY - rect.top,
       };
 
+      if (activeTool === 'pan' && e.buttons === 1 && panStartRef.current) {
+        const dx = screenPos.x - panStartRef.current.x;
+        const dy = screenPos.y - panStartRef.current.y;
+        setPan({
+          x: (viewport.pan?.x || 0) + dx,
+          y: (viewport.pan?.y || 0) + dy,
+        });
+        panStartRef.current = screenPos;
+      }
+
       setMousePos(screenPos);
       const worldPos = applySnap(toWorld(screenPos));
       setWorldMousePos(worldPos);
     },
-    [toWorld, applySnap]
+    [activeTool, applySnap, setPan, toWorld, viewport.pan]
   );
 
   const handleMouseDown = useCallback(
@@ -643,6 +658,13 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           break;
 
         case 'pan':
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            panStartRef.current = {
+              x: e.clientX - rect.left,
+              y: e.clientY - rect.top,
+            };
+          }
           break;
 
         case 'line':
@@ -677,7 +699,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
             const textContent = prompt('Enter text:');
             if (textContent && textContent.trim()) {
               const textEntity = {
-                id: Math.random().toString(36).substring(2, 15),
+                id: generateId(),
                 type: 'text',
                 layerId: activeLayerId,
                 visible: true,
@@ -713,9 +735,9 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         case 'rotate':
         case 'scale':
           // These tools work on selected entities
-          // If nothing selected, alert user
+          // If nothing selected, inform the user.
           if (selectedEntityIds.length === 0) {
-            alert('Please select entities first, then use this tool.');
+            notifications.warning('Selection required', 'Select entities first, then run this tool.');
           } else if (!isDrawing) {
             // Start operation - first click is base point
             startDrawing(worldPos);
@@ -730,9 +752,9 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               // First click - select cutting edge
               if (entity) {
                 setCuttingEdge(entity);
-                alert(`Cutting edge selected: ${entity.type}. Now click on the entity to trim.`);
+                notifications.info('Cutting edge selected', `Selected ${entity.type}. Click entity to trim.`);
               } else {
-                alert('Click on an entity to use as cutting edge.');
+                notifications.info('Trim', 'Click on an entity to use as the cutting edge.');
               }
             } else {
               // Second click - trim the entity
@@ -746,10 +768,10 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                   });
                   setCuttingEdge(null);  // Reset for next trim
                 } else {
-                  alert('Could not trim - no intersection found or entity type not supported.');
+                  notifications.error('Trim failed', 'No intersection found or entity type is not supported.');
                 }
               } else if (!entity) {
-                alert('Click on an entity to trim it.');
+                notifications.info('Trim', 'Click on an entity to trim.');
               }
             }
           }
@@ -763,9 +785,9 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               // First click - select boundary edge
               if (entity) {
                 setCuttingEdge(entity);
-                alert(`Boundary selected: ${entity.type}. Now click on the entity to extend.`);
+                notifications.info('Boundary selected', `Selected ${entity.type}. Click entity to extend.`);
               } else {
-                alert('Click on an entity to use as boundary.');
+                notifications.info('Extend', 'Click on an entity to use as the boundary.');
               }
             } else {
               // Second click - extend the entity
@@ -779,10 +801,10 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                   });
                   setCuttingEdge(null);  // Reset for next extend
                 } else {
-                  alert('Could not extend - no intersection found or entity type not supported.');
+                  notifications.error('Extend failed', 'No intersection found or entity type is not supported.');
                 }
               } else if (!entity) {
-                alert('Click on an entity to extend it.');
+                notifications.info('Extend', 'Click on an entity to extend.');
               }
             }
           }
@@ -791,7 +813,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         case 'array':
           // Array creates multiple copies in a pattern
           if (selectedEntityIds.length === 0) {
-            alert('Please select entities first, then use the Array tool.');
+            notifications.warning('Selection required', 'Select entities first, then run the Array tool.');
           } else {
             // Prompt for array parameters
             const rowsStr = prompt('Number of rows:', '3');
@@ -817,7 +839,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                     const offsetY = row * rowSpacing;
 
                     const newEntity = JSON.parse(JSON.stringify(entity));
-                    newEntity.id = Math.random().toString(36).substring(2, 15);
+                    newEntity.id = generateId();
 
                     // Offset based on entity type
                     if (newEntity.startPoint) {
@@ -848,44 +870,47 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           break;
 
         case 'hatch':
-          // Simplified hatch - creates diagonal line pattern inside a clicked closed polyline
+          // Hatch from a closed polyline or rectangle boundary.
           {
             const entity = findEntityAtPoint(worldPos);
             if (entity && (entity.type === 'polyline' || entity.type === 'rectangle') && (entity.closed || entity.type === 'rectangle')) {
-              // Create hatch entity
-              const hatchEntity = {
-                id: Math.random().toString(36).substring(2, 15),
-                type: 'hatch',
+              const hatchEntity = createHatchFromEntity(entity, 'diagonal45', {
                 layerId: activeLayerId,
-                visible: true,
-                locked: false,
-                style: {
-                  strokeColor: project?.layers.find((l) => l.id === activeLayerId)?.color || '#000000',
-                  strokeWidth: 0.5,
-                  opacity: 0.5,
-                  lineType: 'continuous',
-                },
-                boundaryId: entity.id,
-                pattern: 'diagonal',  // Could be 'diagonal', 'crosshatch', 'dots', etc.
-                spacing: 10,
-                angle: 45,
-              };
-              addEntity(hatchEntity);
+                color: project?.layers.find((layer) => layer.id === activeLayerId)?.color || '#000000',
+                opacity: 0.5,
+              });
+              addEntity({ ...hatchEntity, boundaryId: entity.id });
             } else if (entity) {
-              alert('Please click on a closed polyline or rectangle to fill with hatch pattern.');
+              notifications.warning('Invalid boundary', 'Use a closed polyline or rectangle for hatching.');
             } else {
-              alert('Click inside a closed shape to apply hatch pattern.');
+              notifications.info('Hatch', 'Click inside a closed shape to apply a hatch pattern.');
             }
           }
           break;
       }
     },
-    [activeTool, worldMousePos, isDrawing, startDrawing, addDrawingPoint, clearSelection, selectedEntityIds, activeLayerId, project, addEntity, cuttingEdge, findEntityAtPoint, updateEntity]
+    [
+      activeTool,
+      worldMousePos,
+      isDrawing,
+      startDrawing,
+      addDrawingPoint,
+      clearSelection,
+      selectedEntityIds,
+      activeLayerId,
+      project,
+      addEntity,
+      cuttingEdge,
+      findEntityAtPoint,
+      notifications,
+      updateEntity,
+    ]
   );
 
   const handleMouseUp = useCallback(
     (e) => {
       if (e.button !== 0) return;
+      panStartRef.current = null;
 
       const worldPos = worldMousePos;
 
@@ -893,7 +918,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
         case 'line':
           if (isDrawing && currentPoints.length > 0) {
             const lineEntity = {
-              id: Math.random().toString(36).substring(2, 15),
+              id: generateId(),
               type: 'line',
               layerId: activeLayerId,
               visible: true,
@@ -916,7 +941,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           if (isDrawing && currentPoints.length > 0) {
             const radius = distance(currentPoints[0], worldPos);
             const circleEntity = {
-              id: Math.random().toString(36).substring(2, 15),
+              id: generateId(),
               type: 'circle',
               layerId: activeLayerId,
               visible: true,
@@ -946,7 +971,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
             const height = Math.abs(worldPos.y - start.y);
 
             const rectEntity = {
-              id: Math.random().toString(36).substring(2, 15),
+              id: generateId(),
               type: 'rectangle',
               layerId: activeLayerId,
               visible: true,
@@ -993,7 +1018,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               const endAngle = Math.atan2(cy - centerY, cx - centerX);
 
               const arcEntity = {
-                id: Math.random().toString(36).substring(2, 15),
+                id: generateId(),
                 type: 'arc',
                 layerId: activeLayerId,
                 visible: true,
@@ -1021,7 +1046,10 @@ export function Canvas({ project, activeTool, activeLayerId }) {
             const dist = distance(currentPoints[0], worldPos);
             const dx = Math.abs(worldPos.x - currentPoints[0].x);
             const dy = Math.abs(worldPos.y - currentPoints[0].y);
-            alert(`Distance: ${dist.toFixed(2)} units\nΔX: ${dx.toFixed(2)}\nΔY: ${dy.toFixed(2)}`);
+            notifications.info(
+              'Measurement',
+              'Distance: ' + dist.toFixed(2) + ' units | dX: ' + dx.toFixed(2) + ' | dY: ' + dy.toFixed(2)
+            );
             finishDrawing();
           }
           break;
@@ -1031,7 +1059,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
           if (isDrawing && currentPoints.length > 0) {
             const dist = distance(currentPoints[0], worldPos);
             const dimensionEntity = {
-              id: Math.random().toString(36).substring(2, 15),
+              id: generateId(),
               type: 'dimension',
               layerId: activeLayerId,
               visible: true,
@@ -1062,7 +1090,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                 const entity = project?.entities.find((e) => e.id === entityId);
                 if (entity) {
                   const newEntity = JSON.parse(JSON.stringify(entity));
-                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  newEntity.id = generateId();
                   // Offset based on entity type
                   if (newEntity.startPoint) newEntity.startPoint.y += offsetValue;
                   if (newEntity.endPoint) newEntity.endPoint.y += offsetValue;
@@ -1088,7 +1116,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
               const entity = project?.entities.find((e) => e.id === entityId);
               if (entity) {
                 const newEntity = JSON.parse(JSON.stringify(entity));
-                newEntity.id = Math.random().toString(36).substring(2, 15);
+                newEntity.id = generateId();
                 // Mirror X coordinates around mirrorX
                 const mirrorPoint = (p) => ({ x: 2 * mirrorX - p.x, y: p.y });
                 if (newEntity.startPoint) newEntity.startPoint = mirrorPoint(newEntity.startPoint);
@@ -1129,7 +1157,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                 const entity = project?.entities.find((e) => e.id === entityId);
                 if (entity) {
                   const newEntity = JSON.parse(JSON.stringify(entity));
-                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  newEntity.id = generateId();
                   if (newEntity.startPoint) newEntity.startPoint = rotatePoint(newEntity.startPoint);
                   if (newEntity.endPoint) newEntity.endPoint = rotatePoint(newEntity.endPoint);
                   if (newEntity.center) newEntity.center = rotatePoint(newEntity.center);
@@ -1164,7 +1192,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
                 const entity = project?.entities.find((e) => e.id === entityId);
                 if (entity) {
                   const newEntity = JSON.parse(JSON.stringify(entity));
-                  newEntity.id = Math.random().toString(36).substring(2, 15);
+                  newEntity.id = generateId();
                   if (newEntity.startPoint) newEntity.startPoint = scalePoint(newEntity.startPoint);
                   if (newEntity.endPoint) newEntity.endPoint = scalePoint(newEntity.endPoint);
                   if (newEntity.center) newEntity.center = scalePoint(newEntity.center);
@@ -1196,13 +1224,14 @@ export function Canvas({ project, activeTool, activeLayerId }) {
       addEntity,
       finishDrawing,
       selectedEntityIds,
+      notifications,
     ]
   );
 
   const handleDoubleClick = useCallback(() => {
     if (activeTool === 'polyline' && isDrawing && currentPoints.length >= 2) {
       const polylineEntity = {
-        id: Math.random().toString(36).substring(2, 15),
+        id: generateId(),
         type: 'polyline',
         layerId: activeLayerId,
         visible: true,
@@ -1221,7 +1250,7 @@ export function Canvas({ project, activeTool, activeLayerId }) {
     } else if (activeTool === 'polygon' && isDrawing && currentPoints.length >= 3) {
       // Polygon creates a closed polyline
       const polygonEntity = {
-        id: Math.random().toString(36).substring(2, 15),
+        id: generateId(),
         type: 'polyline',  // Polygons are stored as closed polylines
         layerId: activeLayerId,
         visible: true,
@@ -1302,3 +1331,4 @@ function getCursor(tool, isDrawing) {
       return 'default';
   }
 }
+

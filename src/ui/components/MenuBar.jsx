@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { useCADStore } from '../store/cadStore.js';
+import { downloadDXF } from '../../core/dxf.js';
 import './MenuBar.css';
 
 export function MenuBar({
@@ -35,6 +36,7 @@ export function MenuBar({
     gridSettings,
     snapSettings,
     setZoom,
+    setActiveTool,
   } = useCADStore();
 
   const closeHelpDialog = () => setHelpDialog(null);
@@ -71,7 +73,7 @@ export function MenuBar({
                   <span className="shortcut">Ctrl+N</span>
                   New Project
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onNewProject)}>
                   <span className="shortcut">Ctrl+O</span>
                   Open Project
                 </button>
@@ -80,18 +82,18 @@ export function MenuBar({
                   <span className="shortcut">Ctrl+S</span>
                   Save
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onSave)}>
                   <span className="shortcut">Ctrl+Shift+S</span>
                   Save As...
                 </button>
                 <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => project && downloadDXF(project, `${project.name || 'drawing'}.dxf`))}>
                   Export DXF
                 </button>
                 <button onClick={() => handleMenuItemClick(onExportPDF || (() => { }))}>
                   📄 Export PDF
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => window.print())}>
                   Print...
                 </button>
               </div>
@@ -180,10 +182,10 @@ export function MenuBar({
                   {snapSettings.enabled ? '✓ ' : ''}Snap
                 </button>
                 <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button disabled>
                   Layer Panel
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button disabled>
                   Properties Panel
                 </button>
               </div>
@@ -200,27 +202,27 @@ export function MenuBar({
             </button>
             {activeMenu === 'draw' && (
               <div className="menu-dropdown">
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('line'))}>
                   <span className="shortcut">L</span>
                   Line
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('polyline'))}>
                   <span className="shortcut">P</span>
                   Polyline
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('circle'))}>
                   <span className="shortcut">C</span>
                   Circle
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('arc'))}>
                   <span className="shortcut">A</span>
                   Arc
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('rectangle'))}>
                   <span className="shortcut">R</span>
                   Rectangle
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(() => setActiveTool('polygon'))}>
                   <span className="shortcut">G</span>
                   Polygon
                 </button>
@@ -242,26 +244,26 @@ export function MenuBar({
                   Analysis Panel
                 </button>
                 <div className="menu-divider" />
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Climate Report
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Seismic Analysis
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Flood Assessment
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Material Database
                 </button>
                 <div className="menu-divider" />
                 <button onClick={() => handleMenuItemClick(onToggleBuildingPanel || (() => { }))}>
                   🏗️ Building Parameters
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Structural Design
                 </button>
-                <button onClick={() => handleMenuItemClick(() => { })}>
+                <button onClick={() => handleMenuItemClick(onTogglePNGPanel)}>
                   Drainage Calculator
                 </button>
               </div>
@@ -431,7 +433,7 @@ export function MenuBar({
               <>
                 <h2>🏗️ About PNG Civil CAD</h2>
                 <div className="help-content about-content">
-                  <p className="version"><strong>Version 1.0</strong></p>
+                  <p className="version"><strong>Version 2.0.0</strong></p>
                   <p>Civil Engineering CAD Software designed specifically for Papua New Guinea conditions.</p>
 
                   <h3>Features</h3>

@@ -55,6 +55,7 @@ const PROJECT_TYPES = [
 
 export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
   const [activeTab, setActiveTab] = useState('new');
+  const [formError, setFormError] = useState('');
   const [projectName, setProjectName] = useState('');
   const [description, setDescription] = useState('');
   const [province, setProvince] = useState('National Capital District');
@@ -63,8 +64,9 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
   const [author, setAuthor] = useState('');
 
   const handleCreateProject = () => {
+    setFormError('');
     if (!projectName.trim()) {
-      alert('Please enter a project name');
+      setFormError('Please enter a project name.');
       return;
     }
 
@@ -108,6 +110,12 @@ export function ProjectDialog({ onNewProject, onOpenProject, recentProjects }) {
             <div className="new-project-form">
               <div className="form-section">
                 <h3>Project Information</h3>
+
+                {formError && (
+                  <div className="project-dialog-error" role="alert">
+                    {formError}
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label htmlFor="projectName">Project Name *</label>

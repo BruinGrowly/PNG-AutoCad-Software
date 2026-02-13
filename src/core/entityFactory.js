@@ -6,27 +6,19 @@
  */
 
 import { distance } from './geometry.js';
+import { generateId } from './id.js';
 
-// ============================================
-// Unique ID Generator
-// ============================================
-
-export function generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
+export { generateId };
 
 // ============================================
 // Default Styles and Settings
 // ============================================
 
-/** @type {{ strokeColor: string, strokeWidth: number, opacity: number, lineType: string }} */
+/** @type {{ strokeColor: string, strokeWidth: number, fillColor?: string, opacity: number, lineType: string }} */
 export const DEFAULT_STYLE = {
     strokeColor: '#000000',
     strokeWidth: 1,
+    fillColor: undefined,
     opacity: 1,
     lineType: 'continuous',
 };

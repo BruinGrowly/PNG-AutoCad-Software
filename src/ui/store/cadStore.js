@@ -6,13 +6,113 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  createNewProject,
   createLayer,
   DEFAULT_GRID,
   DEFAULT_SNAP,
 } from '../../core/engine.js';
+import { generateId } from '../../core/id.js';
 
-const generateId = () => Math.random().toString(36).substring(2, 15);
+const MAX_HISTORY = 500;
+
+function deepClone(value) {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function ensureEntityId(entity) {
+  return entity.id ? entity : { ...entity, id: generateId() };
+}
+
+function appendCommand(state, command) {
+  const nextHistory = [
+    ...state.commandHistory.slice(0, state.undoIndex + 1),
+    command,
+  ];
+
+  if (nextHistory.length > MAX_HISTORY) {
+    const trimmed = nextHistory.slice(nextHistory.length - MAX_HISTORY);
+    return { commandHistory: trimmed, undoIndex: trimmed.length - 1 };
+  }
+
+  return { commandHistory: nextHistory, undoIndex: state.undoIndex + 1 };
+}
+
+function createAddEntityCommand(entity) {
+  return {
+    id: generateId(),
+    type: 'add-entity',
+    timestamp: new Date(),
+    entityId: entity.id,
+    entityData: deepClone(entity),
+  };
+}
+
+function createAddEntitiesCommand(entities) {
+  return {
+    id: generateId(),
+    type: 'add-entities',
+    timestamp: new Date(),
+    entityIds: entities.map((entity) => entity.id),
+    entityDataList: deepClone(entities),
+  };
+}
+
+function createDeleteEntityCommand(entity) {
+  return {
+    id: generateId(),
+    type: 'delete-entity',
+    timestamp: new Date(),
+    entityId: entity.id,
+    entityData: deepClone(entity),
+  };
+}
+
+function createDeleteEntitiesCommand(entities) {
+  return {
+    id: generateId(),
+    type: 'delete-entities',
+    timestamp: new Date(),
+    entityIds: entities.map((entity) => entity.id),
+    entityDataList: deepClone(entities),
+  };
+}
+
+function createModifyEntityCommand(oldEntity, newEntity) {
+  return {
+    id: generateId(),
+    type: 'modify-entity',
+    timestamp: new Date(),
+    entityId: oldEntity.id,
+    oldData: deepClone(oldEntity),
+    newData: deepClone(newEntity),
+  };
+}
+
+function applyPointOffset(point, offset) {
+  return { x: point.x + offset.x, y: point.y + offset.y };
+}
+
+function translateEntity(entity, offset) {
+  const translated = deepClone(entity);
+
+  if (translated.startPoint) translated.startPoint = applyPointOffset(translated.startPoint, offset);
+  if (translated.endPoint) translated.endPoint = applyPointOffset(translated.endPoint, offset);
+  if (translated.center) translated.center = applyPointOffset(translated.center, offset);
+  if (translated.topLeft) translated.topLeft = applyPointOffset(translated.topLeft, offset);
+  if (translated.position) translated.position = applyPointOffset(translated.position, offset);
+  if (translated.points) translated.points = translated.points.map((p) => applyPointOffset(p, offset));
+  if (translated.controlPoints) translated.controlPoints = translated.controlPoints.map((p) => applyPointOffset(p, offset));
+  if (translated.boundary) translated.boundary = translated.boundary.map((p) => applyPointOffset(p, offset));
+  if (translated.point1) translated.point1 = applyPointOffset(translated.point1, offset);
+  if (translated.point2) translated.point2 = applyPointOffset(translated.point2, offset);
+  if (translated.textPosition) translated.textPosition = applyPointOffset(translated.textPosition, offset);
+  if (translated.dimLinePosition) translated.dimLinePosition = applyPointOffset(translated.dimLinePosition, offset);
+  if (translated.vertex) translated.vertex = applyPointOffset(translated.vertex, offset);
+
+  return translated;
+}
 
 export const useCADStore = create(
   persist(
@@ -34,7 +134,20 @@ export const useCADStore = create(
       clipboard: [],
 
       // Project actions
-      setProject: (project) => set({ project, isModified: false }),
+      setProject: (project) => set(() => {
+        const fallbackLayerId = project?.layers?.find((layer) => layer.id === 'layer-0')
+          ? 'layer-0'
+          : (project?.layers?.[0]?.id || 'layer-0');
+
+        return {
+          project,
+          isModified: false,
+          selectedEntityIds: [],
+          commandHistory: [],
+          undoIndex: -1,
+          activeLayerId: fallbackLayerId,
+        };
+      }),
 
       updateProject: (updates) => set((state) => ({
         project: state.project ? { ...state.project, ...updates, modifiedAt: new Date() } : null,
@@ -56,23 +169,36 @@ export const useCADStore = create(
       addEntity: (entity) => set((state) => {
         if (!state.project) return state;
 
-        // Store pure data, not closures - prevents recursive command creation
-        const command = {
-          id: generateId(),
-          type: 'add-entity',
-          timestamp: new Date(),
-          entityId: entity.id,
-          entityData: JSON.parse(JSON.stringify(entity)), // Deep clone
-        };
+        const entityToAdd = ensureEntityId(entity);
+        const command = createAddEntityCommand(entityToAdd);
+        const historyState = appendCommand(state, command);
 
         return {
           project: {
             ...state.project,
-            entities: [...state.project.entities, entity],
+            entities: [...state.project.entities, entityToAdd],
             modifiedAt: new Date(),
           },
-          commandHistory: [...state.commandHistory.slice(0, state.undoIndex + 1), command],
-          undoIndex: state.undoIndex + 1,
+          ...historyState,
+          isModified: true,
+        };
+      }),
+
+      addEntities: (entities) => set((state) => {
+        if (!state.project || !entities || entities.length === 0) return state;
+
+        const entitiesToAdd = entities.map(ensureEntityId);
+        const command = createAddEntitiesCommand(entitiesToAdd);
+        const historyState = appendCommand(state, command);
+
+        return {
+          project: {
+            ...state.project,
+            entities: [...state.project.entities, ...entitiesToAdd],
+            modifiedAt: new Date(),
+          },
+          selectedEntityIds: entitiesToAdd.map((entity) => entity.id),
+          ...historyState,
           isModified: true,
         };
       }),
@@ -80,14 +206,22 @@ export const useCADStore = create(
       updateEntity: (id, updates) => set((state) => {
         if (!state.project) return state;
 
+        const existing = state.project.entities.find((entity) => entity.id === id);
+        if (!existing) return state;
+
+        const updated = { ...existing, ...updates };
+        const command = createModifyEntityCommand(existing, updated);
+        const historyState = appendCommand(state, command);
+
         return {
           project: {
             ...state.project,
-            entities: state.project.entities.map((e) =>
-              e.id === id ? { ...e, ...updates } : e
+            entities: state.project.entities.map((entity) =>
+              entity.id === id ? updated : entity
             ),
             modifiedAt: new Date(),
           },
+          ...historyState,
           isModified: true,
         };
       }),
@@ -95,29 +229,45 @@ export const useCADStore = create(
       deleteEntity: (id) => set((state) => {
         if (!state.project) return state;
 
+        const entityToDelete = state.project.entities.find((entity) => entity.id === id);
+        if (!entityToDelete) return state;
+
+        const command = createDeleteEntityCommand(entityToDelete);
+        const historyState = appendCommand(state, command);
+
         return {
           project: {
             ...state.project,
-            entities: state.project.entities.filter((e) => e.id !== id),
+            entities: state.project.entities.filter((entity) => entity.id !== id),
             modifiedAt: new Date(),
           },
-          selectedEntityIds: state.selectedEntityIds.filter((eid) => eid !== id),
+          selectedEntityIds: state.selectedEntityIds.filter((entityId) => entityId !== id),
+          ...historyState,
           isModified: true,
         };
       }),
 
       deleteSelectedEntities: () => set((state) => {
-        if (!state.project) return state;
+        if (!state.project || state.selectedEntityIds.length === 0) return state;
+
+        const selectedEntities = state.project.entities.filter(
+          (entity) => state.selectedEntityIds.includes(entity.id)
+        );
+        if (selectedEntities.length === 0) return state;
+
+        const command = createDeleteEntitiesCommand(selectedEntities);
+        const historyState = appendCommand(state, command);
 
         return {
           project: {
             ...state.project,
             entities: state.project.entities.filter(
-              (e) => !state.selectedEntityIds.includes(e.id)
+              (entity) => !state.selectedEntityIds.includes(entity.id)
             ),
             modifiedAt: new Date(),
           },
           selectedEntityIds: [],
+          ...historyState,
           isModified: true,
         };
       }),
@@ -126,7 +276,7 @@ export const useCADStore = create(
       selectEntity: (id, addToSelection = false) => set((state) => ({
         selectedEntityIds: addToSelection
           ? state.selectedEntityIds.includes(id)
-            ? state.selectedEntityIds.filter((eid) => eid !== id)
+            ? state.selectedEntityIds.filter((entityId) => entityId !== id)
             : [...state.selectedEntityIds, id]
           : [id],
       })),
@@ -137,8 +287,8 @@ export const useCADStore = create(
 
       selectAll: () => set((state) => ({
         selectedEntityIds: state.project?.entities
-          .filter((e) => e.visible && !e.locked)
-          .map((e) => e.id) || [],
+          .filter((entity) => entity.visible && !entity.locked)
+          .map((entity) => entity.id) || [],
       })),
 
       // Layer operations
@@ -162,8 +312,8 @@ export const useCADStore = create(
         return {
           project: {
             ...state.project,
-            layers: state.project.layers.map((l) =>
-              l.id === id ? { ...l, ...updates } : l
+            layers: state.project.layers.map((layer) =>
+              layer.id === id ? { ...layer, ...updates } : layer
             ),
             modifiedAt: new Date(),
           },
@@ -173,18 +323,26 @@ export const useCADStore = create(
 
       deleteLayer: (id) => set((state) => {
         if (!state.project) return state;
+        if (id === 'layer-0') return state;
         if (state.project.layers.length <= 1) return state;
+
+        const remainingLayers = state.project.layers.filter((layer) => layer.id !== id);
+        const fallbackLayerId = remainingLayers.find((layer) => layer.id === 'layer-0')
+          ? 'layer-0'
+          : remainingLayers[0]?.id;
+
+        if (!fallbackLayerId) return state;
 
         return {
           project: {
             ...state.project,
-            layers: state.project.layers.filter((l) => l.id !== id),
-            entities: state.project.entities.map((e) =>
-              e.layerId === id ? { ...e, layerId: 'layer-0' } : e
+            layers: remainingLayers,
+            entities: state.project.entities.map((entity) =>
+              entity.layerId === id ? { ...entity, layerId: fallbackLayerId } : entity
             ),
             modifiedAt: new Date(),
           },
-          activeLayerId: state.activeLayerId === id ? 'layer-0' : state.activeLayerId,
+          activeLayerId: state.activeLayerId === id ? fallbackLayerId : state.activeLayerId,
           isModified: true,
         };
       }),
@@ -195,8 +353,8 @@ export const useCADStore = create(
         return {
           project: {
             ...state.project,
-            layers: state.project.layers.map((l) =>
-              l.id === id ? { ...l, visible: !l.visible } : l
+            layers: state.project.layers.map((layer) =>
+              layer.id === id ? { ...layer, visible: !layer.visible } : layer
             ),
           },
         };
@@ -208,8 +366,8 @@ export const useCADStore = create(
         return {
           project: {
             ...state.project,
-            layers: state.project.layers.map((l) =>
-              l.id === id ? { ...l, locked: !l.locked } : l
+            layers: state.project.layers.map((layer) =>
+              layer.id === id ? { ...layer, locked: !layer.locked } : layer
             ),
           },
         };
@@ -264,25 +422,41 @@ export const useCADStore = create(
         let newEntities = [...state.project.entities];
         let newSelectedIds = [...state.selectedEntityIds];
 
-        // Interpret command data and apply reverse operation
         switch (command.type) {
           case 'add-entity':
-            // Undo add = remove the entity
-            newEntities = newEntities.filter(e => e.id !== command.entityId);
-            newSelectedIds = newSelectedIds.filter(id => id !== command.entityId);
+            newEntities = newEntities.filter((entity) => entity.id !== command.entityId);
+            newSelectedIds = newSelectedIds.filter((id) => id !== command.entityId);
             break;
+
+          case 'add-entities':
+            newEntities = newEntities.filter(
+              (entity) => !command.entityIds.includes(entity.id)
+            );
+            newSelectedIds = newSelectedIds.filter((id) => !command.entityIds.includes(id));
+            break;
+
           case 'delete-entity':
-            // Undo delete = restore the entity
-            newEntities.push(command.entityData);
+            if (!newEntities.some((entity) => entity.id === command.entityId)) {
+              newEntities.push(command.entityData);
+            }
             break;
+
+          case 'delete-entities':
+            for (const entityData of command.entityDataList) {
+              if (!newEntities.some((entity) => entity.id === entityData.id)) {
+                newEntities.push(entityData);
+              }
+            }
+            break;
+
           case 'modify-entity':
-            // Undo modify = restore old state
-            newEntities = newEntities.map(e =>
-              e.id === command.entityId ? command.oldData : e
+            newEntities = newEntities.map((entity) =>
+              entity.id === command.entityId ? command.oldData : entity
             );
             break;
+
           default:
-            console.warn('Unknown command type:', command.type);
+            return state;
         }
 
         return {
@@ -302,25 +476,44 @@ export const useCADStore = create(
 
         const command = state.commandHistory[state.undoIndex + 1];
         let newEntities = [...state.project.entities];
+        let newSelectedIds = [...state.selectedEntityIds];
 
-        // Interpret command data and re-apply operation
         switch (command.type) {
           case 'add-entity':
-            // Redo add = add the entity back
-            newEntities.push(command.entityData);
+            if (!newEntities.some((entity) => entity.id === command.entityId)) {
+              newEntities.push(command.entityData);
+            }
             break;
+
+          case 'add-entities':
+            for (const entityData of command.entityDataList) {
+              if (!newEntities.some((entity) => entity.id === entityData.id)) {
+                newEntities.push(entityData);
+              }
+            }
+            newSelectedIds = command.entityIds;
+            break;
+
           case 'delete-entity':
-            // Redo delete = remove the entity again
-            newEntities = newEntities.filter(e => e.id !== command.entityId);
+            newEntities = newEntities.filter((entity) => entity.id !== command.entityId);
+            newSelectedIds = newSelectedIds.filter((id) => id !== command.entityId);
             break;
+
+          case 'delete-entities':
+            newEntities = newEntities.filter(
+              (entity) => !command.entityIds.includes(entity.id)
+            );
+            newSelectedIds = newSelectedIds.filter((id) => !command.entityIds.includes(id));
+            break;
+
           case 'modify-entity':
-            // Redo modify = apply new state
-            newEntities = newEntities.map(e =>
-              e.id === command.entityId ? command.newData : e
+            newEntities = newEntities.map((entity) =>
+              entity.id === command.entityId ? command.newData : entity
             );
             break;
+
           default:
-            console.warn('Unknown command type:', command.type);
+            return state;
         }
 
         return {
@@ -329,6 +522,7 @@ export const useCADStore = create(
             entities: newEntities,
             modifiedAt: new Date(),
           },
+          selectedEntityIds: newSelectedIds,
           undoIndex: state.undoIndex + 1,
           isModified: true,
         };
@@ -342,10 +536,10 @@ export const useCADStore = create(
         if (!state.project) return state;
 
         const selectedEntities = state.project.entities.filter(
-          (e) => state.selectedEntityIds.includes(e.id)
+          (entity) => state.selectedEntityIds.includes(entity.id)
         );
 
-        return { clipboard: selectedEntities };
+        return { clipboard: deepClone(selectedEntities) };
       }),
 
       cut: () => {
@@ -356,14 +550,13 @@ export const useCADStore = create(
       paste: (offset = { x: 20, y: 20 }) => set((state) => {
         if (!state.project || state.clipboard.length === 0) return state;
 
-        const newEntities = state.clipboard.map((e) => ({
-          ...e,
+        const newEntities = state.clipboard.map((entity) => ({
+          ...translateEntity(entity, offset),
           id: generateId(),
-          ...(e.type === 'line' && {
-            startPoint: { x: e.startPoint.x + offset.x, y: e.startPoint.y + offset.y },
-            endPoint: { x: e.endPoint.x + offset.x, y: e.endPoint.y + offset.y },
-          }),
         }));
+
+        const command = createAddEntitiesCommand(newEntities);
+        const historyState = appendCommand(state, command);
 
         return {
           project: {
@@ -371,7 +564,8 @@ export const useCADStore = create(
             entities: [...state.project.entities, ...newEntities],
             modifiedAt: new Date(),
           },
-          selectedEntityIds: newEntities.map((e) => e.id),
+          selectedEntityIds: newEntities.map((entity) => entity.id),
+          ...historyState,
           isModified: true,
         };
       }),
@@ -383,8 +577,8 @@ export const useCADStore = create(
         return {
           project: {
             ...state.project,
-            viewports: state.project.viewports.map((v) =>
-              v.isActive ? { ...v, zoom: Math.max(0.1, Math.min(10, zoom)) } : v
+            viewports: state.project.viewports.map((viewport) =>
+              viewport.isActive ? { ...viewport, zoom: Math.max(0.1, Math.min(10, zoom)) } : viewport
             ),
           },
         };
@@ -396,8 +590,8 @@ export const useCADStore = create(
         return {
           project: {
             ...state.project,
-            viewports: state.project.viewports.map((v) =>
-              v.isActive ? { ...v, pan } : v
+            viewports: state.project.viewports.map((viewport) =>
+              viewport.isActive ? { ...viewport, pan } : viewport
             ),
           },
         };
@@ -428,3 +622,4 @@ export const useCADStore = create(
     }
   )
 );
+

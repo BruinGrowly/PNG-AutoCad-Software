@@ -49,7 +49,7 @@ PNG Civil CAD follows a modular architecture with clear separation of concerns:
 ### Design Principles
 
 1. **Offline-First**: All functionality works without internet
-2. **Type Safety**: Full TypeScript coverage
+2. **Type Safety**: JSDoc-typed JavaScript with strict automated tests
 3. **Modularity**: Independent modules with clear interfaces
 4. **Extensibility**: Easy to add new tools and analysis modules
 5. **PNG-Centric**: Design decisions prioritize PNG requirements
@@ -62,10 +62,10 @@ PNG Civil CAD follows a modular architecture with clear separation of concerns:
 png-civil-cad/
 ├── src/
 │   ├── core/                 # Core CAD functionality
-│   │   ├── types.ts          # Type definitions
-│   │   ├── geometry.ts       # Geometric calculations
-│   │   ├── engine.ts         # CAD engine
-│   │   └── index.ts          # Module exports
+│   │   ├── types.js          # Type definitions
+│   │   ├── geometry.js       # Geometric calculations
+│   │   ├── engine.js         # CAD engine
+│   │   └── index.js          # Module exports
 │   │
 │   ├── png/                  # PNG-specific modules
 │   │   ├── climate.ts        # Climate analysis
@@ -73,20 +73,20 @@ png-civil-cad/
 │   │   ├── flood.ts          # Flood assessment
 │   │   ├── materials.ts      # Material database
 │   │   ├── structural.ts     # Structural analysis
-│   │   └── index.ts          # Module exports
+│   │   └── index.js          # Module exports
 │   │
 │   ├── ui/                   # User interface
 │   │   ├── components/       # React components
 │   │   ├── store/            # State management
 │   │   ├── hooks/            # Custom React hooks
 │   │   ├── styles/           # CSS styles
-│   │   └── App.tsx           # Main application
+│   │   └── App.jsx           # Main application
 │   │
-│   ├── desktop/              # Electron desktop app
+│   ├── (not in current web build)
 │   │   ├── main.ts           # Main process
 │   │   └── preload.ts        # Preload script
 │   │
-│   └── main.tsx              # Web entry point
+│   └── main.jsx              # Web entry point
 │
 ├── docs/                     # Documentation
 ├── tests/                    # Test files
@@ -98,7 +98,7 @@ png-civil-cad/
 
 ## Core Modules
 
-### Types (`src/core/types.ts`)
+### Types (`src/core/types.js`)
 
 Central type definitions for the entire application.
 
@@ -173,7 +173,7 @@ type PNGSeismicZone =
   | 'zone-4'; // Very high
 ```
 
-### Geometry (`src/core/geometry.ts`)
+### Geometry (`src/core/geometry.js`)
 
 Mathematical functions for CAD operations.
 
@@ -233,7 +233,7 @@ function latLongToUTM(lat: number, lon: number): {
 };
 ```
 
-### Engine (`src/core/engine.ts`)
+### Engine (`src/core/engine.js`)
 
 Core CAD engine functionality.
 
@@ -724,7 +724,7 @@ export function useOfflineStorage() {
 
 ### Adding a New Drawing Tool
 
-1. Add tool type to `DrawingTool` in `types.ts`:
+1. Add tool type to `DrawingTool` in `types.js`:
 
 ```typescript
 type DrawingTool = ... | 'my-new-tool';
@@ -747,7 +747,7 @@ case 'my-new-tool':
   break;
 ```
 
-4. Add keyboard shortcut in `App.tsx`:
+4. Add keyboard shortcut in `App.jsx`:
 
 ```typescript
 case 'mt':
@@ -769,7 +769,7 @@ export function performMyAnalysis(input: MyAnalysisInput): MyAnalysisResult {
 }
 ```
 
-2. Export from `src/png/index.ts`:
+2. Export from `src/png/index.js`:
 
 ```typescript
 export * from './my-analysis';
@@ -789,7 +789,7 @@ function MyAnalysisTab({ project }: { project: Project }) {
 
 ### Adding New Entity Type
 
-1. Define entity interface in `types.ts`:
+1. Define entity interface in `types.js`:
 
 ```typescript
 interface MyEntityEntity extends BaseEntity {
@@ -828,20 +828,20 @@ case 'my-entity':
 ```
 tests/
 ├── core/
-│   ├── geometry.test.ts
-│   ├── engine.test.ts
-│   └── types.test.ts
+│   ├── geometry.test.js
+│   ├── engine.test.js
+│   └── types.test.js
 ├── png/
-│   ├── climate.test.ts
-│   ├── seismic.test.ts
-│   ├── flood.test.ts
-│   ├── materials.test.ts
-│   └── structural.test.ts
+│   ├── climate.test.js
+│   ├── seismic.test.js
+│   ├── flood.test.js
+│   ├── materials.test.js
+│   └── structural.test.js
 ├── ui/
 │   ├── components/
 │   └── store/
 └── integration/
-    └── project.test.ts
+    └── project.test.js
 ```
 
 ### Running Tests
@@ -854,10 +854,10 @@ npm test
 npm run test:coverage
 
 # Run specific test file
-npm test -- geometry.test.ts
+npm test -- geometry.test.js
 
 # Watch mode
-npm run test:watch
+npm test
 ```
 
 ### Writing Tests
@@ -887,23 +887,13 @@ describe('Geometry', () => {
 # Install dependencies
 npm install
 
-# Start development server (web)
-npm run start:web
-
-# Start Electron development
-npm run start:desktop
+# Start development server`r`nnpm run dev
 ```
 
 ### Production Build
 
 ```bash
-# Build web application
-npm run build:web
-
-# Build desktop application
-npm run build:desktop
-
-# Build both
+# Build application
 npm run build
 ```
 
@@ -929,7 +919,7 @@ The Electron builder creates installers for:
 
 ## Code Style
 
-### TypeScript Guidelines
+### JavaScript + JSDoc Guidelines
 
 1. Use explicit types for function parameters and returns
 2. Prefer interfaces over type aliases for objects
@@ -953,3 +943,5 @@ The Electron builder creates installers for:
 ---
 
 *PNG Civil CAD Developer Guide v1.0*
+
+

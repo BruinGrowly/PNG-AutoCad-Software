@@ -647,6 +647,11 @@ ${entity.center.y}
 }
 
 function hatchToDXF(entity, layerName, color) {
+  if (!Array.isArray(entity.boundary) || entity.boundary.length < 2) {
+    // Keep export resilient when legacy hatch entities only store boundaryId.
+    return '';
+  }
+
   // Export hatch boundary as polyline
   let dxf = `0
 LWPOLYLINE

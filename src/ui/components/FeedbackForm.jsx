@@ -19,32 +19,16 @@ const REPORT_TYPES = [
     { id: 'question', label: '❓ Question', subject: '[Question]' },
 ];
 
-// Capture console errors for optional inclusion in bug reports
+// Session error log used for optional bug-report context.
 const errorLog = [];
 const MAX_ERRORS = 20;
 
-// Capture console.error messages
-const originalConsoleError = console.error;
-console.error = (...args) => {
+function pushErrorEntry(entry) {
     errorLog.push({
         timestamp: new Date().toISOString(),
-        type: 'error',
-        message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+        ...entry,
     });
     if (errorLog.length > MAX_ERRORS) errorLog.shift();
-    originalConsoleError.apply(console, args);
-};
-
-// Capture unhandled errors
-if (typeof window !== 'undefined') {
-    window.addEventListener('error', (event) => {
-        errorLog.push({
-            timestamp: new Date().toISOString(),
-            type: 'unhandled',
-            message: `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`
-        });
-        if (errorLog.length > MAX_ERRORS) errorLog.shift();
-    });
 }
 
 export function FeedbackForm({ onClose, appVersion = '2.0.0' }) {
@@ -59,6 +43,32 @@ export function FeedbackForm({ onClose, appVersion = '2.0.0' }) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
     const [recentErrors, setRecentErrors] = useState([]);
+    const [formError, setFormError] = useState('');
+
+    useEffect(() => {
+        const handleWindowError = (event) => {
+            pushErrorEntry({
+                type: 'unhandled',
+                message: `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`,
+            });
+        };
+
+        const handleUnhandledRejection = (event) => {
+            const reason = event.reason instanceof Error ? event.reason.message : String(event.reason);
+            pushErrorEntry({
+                type: 'promise',
+                message: reason,
+            });
+        };
+
+        window.addEventListener('error', handleWindowError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+        return () => {
+            window.removeEventListener('error', handleWindowError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        };
+    }, []);
 
     // Load recent errors when form opens (only for bug reports)
     useEffect(() => {
@@ -101,14 +111,15 @@ ${errorText}
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setFormError('');
 
         if (!hasConsent || !hasPrivacyConsent) {
-            alert('Please provide all required consents to send this report.');
+            setFormError('Please provide all required consents to send this report.');
             return;
         }
 
         if (!title.trim()) {
-            alert('Please provide a title for your report.');
+            setFormError('Please provide a title for your report.');
             return;
         }
 
@@ -250,6 +261,12 @@ Sent from PNG Civil CAD Feedback System v${appVersion}`;
                 </div>
 
                 <form onSubmit={handleSubmit} className="feedback-form">
+                    {formError && (
+                        <div className="feedback-error" role="alert">
+                            {formError}
+                        </div>
+                    )}
+
                     {/* Report Type */}
                     <div className="form-group">
                         <label>What type of report is this?</label>

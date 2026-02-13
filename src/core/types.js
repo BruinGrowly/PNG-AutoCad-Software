@@ -203,7 +203,7 @@ export const DEFAULT_STYLE = {
 export const DEFAULT_GRID = {
   visible: true,
   spacing: 10,
-  majorLineEvery: 5,
+  majorLineEvery: 10,
   color: '#e0e0e0',
   majorColor: '#c0c0c0',
   opacity: 0.5,
@@ -216,9 +216,9 @@ export const DEFAULT_SNAP = {
   midpointSnap: true,
   centerSnap: true,
   intersectionSnap: true,
-  perpendicularSnap: false,
+  perpendicularSnap: true,
   tangentSnap: false,
-  nearestSnap: true,
+  nearestSnap: false,
   snapDistance: 10,
 };
 

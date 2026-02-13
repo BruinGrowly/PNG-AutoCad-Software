@@ -4,7 +4,7 @@
 
 **A free, browser-based CAD application for Civil Engineers in Papua New Guinea** 🇵🇬
 
-[![Tests](https://img.shields.io/badge/tests-495%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-529%20passing-brightgreen)]()
 [![Version](https://img.shields.io/badge/version-2.0.0-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -131,9 +131,11 @@ Want your own deployment? Click the button above or see [docs/DEPLOYMENT.md](doc
 ```bash
 npm test           # Watch mode
 npm run test:run   # Single run
+npm run test:coverage
+npm run verify     # Tests + production build
 ```
 
-**495 tests** covering all modules.
+**529 tests** covering all modules.
 
 ---
 
@@ -183,7 +185,7 @@ src/
 - ✅ Material costs in Kina
 
 ### Technical
-- ✅ 495 passing tests
+- ✅ 529 passing tests
 - ✅ DXF import/export
 - ✅ Offline capability
 - ✅ Auto-save
