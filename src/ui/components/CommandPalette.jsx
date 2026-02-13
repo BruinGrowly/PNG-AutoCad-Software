@@ -2,7 +2,7 @@
  * Global command palette (Ctrl/Cmd+K) for quick actions.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './CommandPalette.css';
 
 function formatSearchTokens(value) {
@@ -12,29 +12,115 @@ function formatSearchTokens(value) {
     .filter(Boolean);
 }
 
-function actionMatchesQuery(action, queryTokens) {
-  if (queryTokens.length === 0) {
-    return true;
-  }
+function prepareAction(action) {
+  const label = (action.label || '').toLowerCase();
+  const group = (action.group || '').toLowerCase();
+  const shortcut = (action.shortcut || '').toLowerCase();
+  const keywords = (action.keywords || []).map((keyword) => keyword.toLowerCase());
 
-  const haystack = [
-    action.label,
-    action.group || '',
-    action.shortcut || '',
-    ...(action.keywords || []),
-  ].join(' ').toLowerCase();
-
-  return queryTokens.every((token) => haystack.includes(token));
+  return {
+    action,
+    label,
+    group,
+    shortcut,
+    keywords,
+    haystack: [label, group, shortcut, ...keywords].join(' '),
+  };
 }
 
-export function CommandPalette({ open, onClose, actions = [] }) {
+function getActionScore(preparedAction, queryTokens) {
+  if (queryTokens.length === 0) {
+    return 1;
+  }
+
+  let score = 0;
+
+  for (const token of queryTokens) {
+    if (!preparedAction.haystack.includes(token)) {
+      return -1;
+    }
+
+    if (preparedAction.label.startsWith(token)) {
+      score += 8;
+      continue;
+    }
+    if (preparedAction.label.includes(token)) {
+      score += 5;
+      continue;
+    }
+    if (preparedAction.keywords.some((keyword) => keyword.startsWith(token))) {
+      score += 4;
+      continue;
+    }
+    if (preparedAction.group.includes(token)) {
+      score += 2;
+      continue;
+    }
+    score += 1;
+  }
+
+  return score;
+}
+
+export function CommandPalette({
+  open,
+  onClose,
+  actions = [],
+  recentActionIds = [],
+  onActionExecuted,
+}) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef(null);
 
   const filteredActions = useMemo(() => {
     const tokens = formatSearchTokens(query);
-    return actions.filter((action) => actionMatchesQuery(action, tokens));
-  }, [actions, query]);
+    const preparedActions = actions.map(prepareAction);
+    const recentActionRanks = new Map(recentActionIds.map((id, index) => [id, index]));
+
+    return preparedActions
+      .map((preparedAction) => {
+        const baseScore = getActionScore(preparedAction, tokens);
+        if (baseScore < 0) return null;
+
+        const recentIndex = recentActionRanks.has(preparedAction.action.id)
+          ? recentActionRanks.get(preparedAction.action.id)
+          : null;
+
+        return {
+          ...preparedAction.action,
+          score: baseScore,
+          recentIndex,
+          isRecent: recentIndex !== null,
+        };
+      })
+      .filter(Boolean)
+      .sort((first, second) => {
+        if (tokens.length === 0) {
+          const firstRecent = first.recentIndex !== null;
+          const secondRecent = second.recentIndex !== null;
+
+          if (firstRecent && secondRecent) {
+            return first.recentIndex - second.recentIndex;
+          }
+          if (firstRecent !== secondRecent) {
+            return firstRecent ? -1 : 1;
+          }
+        }
+
+        if (second.score !== first.score) {
+          return second.score - first.score;
+        }
+        return (first.label || '').localeCompare(second.label || '');
+      });
+  }, [actions, query, recentActionIds]);
+
+  const runAction = useCallback((action) => {
+    if (!action) return;
+    action.onSelect?.();
+    onActionExecuted?.(action.id);
+    onClose();
+  }, [onActionExecuted, onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -42,12 +128,12 @@ export function CommandPalette({ open, onClose, actions = [] }) {
       setActiveIndex(0);
       return;
     }
-    setTimeout(() => {
-      const input = document.querySelector('.command-palette-input');
-      if (input instanceof HTMLInputElement) {
-        input.focus();
-      }
-    }, 0);
+
+    const frameHandle = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frameHandle);
   }, [open]);
 
   useEffect(() => {
@@ -87,16 +173,13 @@ export function CommandPalette({ open, onClose, actions = [] }) {
       if (event.key === 'Enter') {
         event.preventDefault();
         const targetAction = filteredActions[activeIndex];
-        if (targetAction) {
-          targetAction.onSelect();
-          onClose();
-        }
+        runAction(targetAction);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex, filteredActions, onClose, open]);
+  }, [activeIndex, filteredActions, onClose, open, runAction]);
 
   if (!open) {
     return null;
@@ -113,6 +196,7 @@ export function CommandPalette({ open, onClose, actions = [] }) {
       >
         <div className="command-palette-header">
           <input
+            ref={inputRef}
             className="command-palette-input"
             type="text"
             value={query}
@@ -127,6 +211,12 @@ export function CommandPalette({ open, onClose, actions = [] }) {
         </div>
 
         <div className="command-palette-list">
+          <div className="command-palette-summary">
+            {query
+              ? `${filteredActions.length} match${filteredActions.length === 1 ? '' : 'es'}`
+              : 'Recent actions appear first'}
+          </div>
+
           {filteredActions.length === 0 ? (
             <div className="command-empty-state">No matching actions.</div>
           ) : (
@@ -136,13 +226,13 @@ export function CommandPalette({ open, onClose, actions = [] }) {
                 key={action.id}
                 className={`command-item ${index === activeIndex ? 'active' : ''}`}
                 onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => {
-                  action.onSelect();
-                  onClose();
-                }}
+                onClick={() => runAction(action)}
               >
                 <div className="command-item-copy">
-                  <span className="command-item-group">{action.group || 'Action'}</span>
+                  <div className="command-item-meta">
+                    <span className="command-item-group">{action.group || 'Action'}</span>
+                    {action.isRecent && <span className="command-item-badge">Recent</span>}
+                  </div>
                   <span className="command-item-label">{action.label}</span>
                 </div>
                 {action.shortcut && <span className="command-item-shortcut">{action.shortcut}</span>}

@@ -69,6 +69,15 @@
   padding: 7px;
 }
 
+.command-palette-summary {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64889e;
+  padding: 4px 4px 8px;
+}
+
 .command-item {
   width: 100%;
   border-radius: 10px;
@@ -95,12 +104,30 @@
   gap: 2px;
 }
 
+.command-item-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .command-item-group {
   font-family: var(--font-mono);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #628094;
+}
+
+.command-item-badge {
+  border-radius: 999px;
+  border: 1px solid rgba(240, 183, 96, 0.45);
+  background: rgba(248, 198, 120, 0.2);
+  color: #80511e;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
 }
 
 .command-item-label {

@@ -58,6 +58,8 @@ const MODULES = [
 ];
 
 const WORKSPACE_MODE_STORAGE_KEY = 'pngcad-workspace-mode-v1';
+const COMMAND_HISTORY_STORAGE_KEY = 'pngcad-command-history-v1';
+const COMMAND_HISTORY_MAX_ITEMS = 10;
 
 const WORKSPACE_MODES = [
   {
@@ -94,6 +96,28 @@ function getInitialWorkspaceMode() {
   return 'draft';
 }
 
+function getInitialCommandHistory() {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const rawHistory = window.localStorage.getItem(COMMAND_HISTORY_STORAGE_KEY);
+    if (!rawHistory) {
+      return [];
+    }
+    const parsedHistory = JSON.parse(rawHistory);
+    if (!Array.isArray(parsedHistory)) {
+      return [];
+    }
+    return parsedHistory
+      .filter((value) => typeof value === 'string')
+      .slice(0, COMMAND_HISTORY_MAX_ITEMS);
+  } catch {
+    return [];
+  }
+}
+
 export function App() {
   const [showProjectDialog, setShowProjectDialog] = useState(true);
   const [showPNGPanel, setShowPNGPanel] = useState(false);
@@ -103,6 +127,7 @@ export function App() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showSurfaceImport, setShowSurfaceImport] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [recentCommandIds, setRecentCommandIds] = useState(getInitialCommandHistory);
   const [workspaceMode, setWorkspaceMode] = useState(getInitialWorkspaceMode);
   const [activeModule, setActiveModule] = useState('workspace');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -165,6 +190,20 @@ export function App() {
       // Ignore localStorage write errors.
     }
   }, [workspaceMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (recentCommandIds.length === 0) {
+        window.localStorage.removeItem(COMMAND_HISTORY_STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(recentCommandIds));
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }, [recentCommandIds]);
 
   // Auto-save every minute.
   useEffect(() => {
@@ -439,6 +478,14 @@ export function App() {
       return next;
     });
   }, [workspaceMode]);
+
+  const recordCommandPaletteAction = useCallback((actionId) => {
+    if (!actionId) return;
+    setRecentCommandIds((previous) => [
+      actionId,
+      ...previous.filter((id) => id !== actionId),
+    ].slice(0, COMMAND_HISTORY_MAX_ITEMS));
+  }, []);
 
   const commandPaletteActions = useMemo(() => {
     const togglePNG = () => setShowPNGPanel((prev) => {
@@ -937,6 +984,8 @@ export function App() {
           open={showCommandPalette}
           onClose={closeCommandPalette}
           actions={commandPaletteActions}
+          recentActionIds={recentCommandIds}
+          onActionExecuted={recordCommandPaletteAction}
         />
       </div>
     </div>
