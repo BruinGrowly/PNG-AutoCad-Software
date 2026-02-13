@@ -1,6 +1,5 @@
 /**
- * Notification/Toast System
- * Provides user feedback for actions and events
+ * Notification / toast system.
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
@@ -23,33 +22,33 @@ export function NotificationProvider({ children }) {
       dismissible: notification.dismissible ?? true,
     };
 
-    setNotifications(prev => [...prev, newNotification]);
+    setNotifications((previous) => [...previous, newNotification]);
     return id;
   }, []);
 
   const removeNotification = useCallback((id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((previous) => previous.filter((item) => item.id !== id));
   }, []);
 
   const clearAll = useCallback(() => {
     setNotifications([]);
   }, []);
 
-  const success = useCallback((title, message, options = {}) => {
-    return addNotification({ type: 'success', title, message, ...options });
-  }, [addNotification]);
+  const success = useCallback((title, message, options = {}) => (
+    addNotification({ type: 'success', title, message, ...options })
+  ), [addNotification]);
 
-  const error = useCallback((title, message, options = {}) => {
-    return addNotification({ type: 'error', title, message, duration: 0, ...options });
-  }, [addNotification]);
+  const error = useCallback((title, message, options = {}) => (
+    addNotification({ type: 'error', title, message, duration: 0, ...options })
+  ), [addNotification]);
 
-  const warning = useCallback((title, message, options = {}) => {
-    return addNotification({ type: 'warning', title, message, duration: 8000, ...options });
-  }, [addNotification]);
+  const warning = useCallback((title, message, options = {}) => (
+    addNotification({ type: 'warning', title, message, duration: 8000, ...options })
+  ), [addNotification]);
 
-  const info = useCallback((title, message, options = {}) => {
-    return addNotification({ type: 'info', title, message, ...options });
-  }, [addNotification]);
+  const info = useCallback((title, message, options = {}) => (
+    addNotification({ type: 'info', title, message, ...options })
+  ), [addNotification]);
 
   return (
     <NotificationContext.Provider
@@ -65,10 +64,7 @@ export function NotificationProvider({ children }) {
       }}
     >
       {children}
-      <NotificationContainer
-        notifications={notifications}
-        onDismiss={removeNotification}
-      />
+      <NotificationContainer notifications={notifications} onDismiss={removeNotification} />
     </NotificationContext.Provider>
   );
 }
@@ -84,7 +80,7 @@ export function useNotifications() {
 function NotificationContainer({ notifications, onDismiss }) {
   return (
     <div className="notification-container">
-      {notifications.map(notification => (
+      {notifications.map((notification) => (
         <NotificationItem
           key={notification.id}
           notification={notification}
@@ -102,7 +98,7 @@ function NotificationItem({ notification, onDismiss }) {
     if (notification.duration && notification.duration > 0) {
       const timer = setTimeout(() => {
         setIsExiting(true);
-        setTimeout(onDismiss, 300);
+        setTimeout(onDismiss, 250);
       }, notification.duration);
       return () => clearTimeout(timer);
     }
@@ -110,14 +106,14 @@ function NotificationItem({ notification, onDismiss }) {
 
   const handleDismiss = () => {
     setIsExiting(true);
-    setTimeout(onDismiss, 300);
+    setTimeout(onDismiss, 250);
   };
 
   const icons = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠',
-    info: 'ℹ',
+    success: 'OK',
+    error: 'ER',
+    warning: 'WR',
+    info: 'IN',
   };
 
   return (
@@ -125,11 +121,10 @@ function NotificationItem({ notification, onDismiss }) {
       <div className="notification-icon">{icons[notification.type]}</div>
       <div className="notification-content">
         <div className="notification-title">{notification.title}</div>
-        {notification.message && (
-          <div className="notification-message">{notification.message}</div>
-        )}
+        {notification.message && <div className="notification-message">{notification.message}</div>}
         {notification.action && (
           <button
+            type="button"
             className="notification-action"
             onClick={() => {
               notification.action.onClick();
@@ -141,9 +136,7 @@ function NotificationItem({ notification, onDismiss }) {
         )}
       </div>
       {notification.dismissible && (
-        <button className="notification-dismiss" onClick={handleDismiss}>
-          ×
-        </button>
+        <button type="button" className="notification-dismiss" onClick={handleDismiss}>x</button>
       )}
     </div>
   );

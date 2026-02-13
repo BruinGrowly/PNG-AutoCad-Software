@@ -1,77 +1,84 @@
 /**
- * Context Menu Styles
+ * Context menu styles.
  */
 
 .context-menu {
-    position: fixed;
-    background: #252526;
-    border: 1px solid #3c3c3c;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    min-width: 200px;
-    padding: 4px 0;
-    z-index: 999;
-    font-size: 13px;
+  position: fixed;
+  z-index: 1300;
+  min-width: 230px;
+  border-radius: 12px;
+  border: 1px solid rgba(91, 152, 180, 0.28);
+  background: rgba(247, 253, 255, 0.97);
+  box-shadow: 0 16px 34px rgba(7, 36, 52, 0.24);
+  padding: 6px;
+  font-size: 12px;
 }
 
 .context-menu-header {
-    padding: 8px 12px;
-    color: #888;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  padding: 6px 8px 7px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #5d7d91;
 }
 
 .context-menu-divider {
-    height: 1px;
-    background: #3c3c3c;
-    margin: 4px 0;
+  height: 1px;
+  margin: 4px 1px;
+  background: rgba(87, 149, 177, 0.2);
 }
 
 .context-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    cursor: pointer;
-    text-align: left;
-    font-size: 13px;
-    transition: background 0.1s;
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  text-align: left;
+  cursor: pointer;
+  color: #264e67;
+  transition: background 0.15s ease;
 }
 
 .context-menu-item:hover {
-    background: #094771;
+  background: rgba(170, 223, 242, 0.24);
 }
 
 .context-menu-item.disabled {
-    color: #666;
-    cursor: not-allowed;
+  color: #8aa0af;
+  cursor: not-allowed;
 }
 
 .context-menu-item.disabled:hover {
-    background: none;
+  background: transparent;
 }
 
 .context-menu-item.danger:hover {
-    background: #5a1d1d;
+  background: rgba(244, 210, 210, 0.4);
 }
 
 .item-icon {
-    font-size: 14px;
-    width: 20px;
-    text-align: center;
+  width: 24px;
+  text-align: center;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  border: 1px solid rgba(86, 149, 176, 0.3);
+  border-radius: 6px;
+  padding: 3px 0;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .item-label {
-    flex: 1;
+  flex: 1;
+  font-size: 12px;
 }
 
 .item-shortcut {
-    color: #666;
-    font-size: 11px;
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 10px;
+  color: #6f8898;
+  font-family: var(--font-mono);
 }
