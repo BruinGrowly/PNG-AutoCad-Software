@@ -16,6 +16,7 @@ import { ProjectExplorer } from './components/ProjectExplorer.jsx';
 import { KeyboardHelp } from './components/KeyboardHelp.jsx';
 import { FeedbackForm } from './components/FeedbackForm.jsx';
 import { SurfaceImportPanel } from './components/SurfaceImportPanel.jsx';
+import { CommandPalette } from './components/CommandPalette.jsx';
 import { useNotifications } from './components/Notifications.jsx';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useCADStore } from './store/cadStore.js';
@@ -64,6 +65,7 @@ export function App() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showSurfaceImport, setShowSurfaceImport] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [activeModule, setActiveModule] = useState('workspace');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastManualSaveTime, setLastManualSaveTime] = useState(null);
@@ -162,6 +164,7 @@ export function App() {
     arcTool: () => setActiveTool('arc'),
     toggleExplorer: () => setShowProjectExplorer((prev) => !prev),
     showHelp: () => setShowKeyboardHelp(true),
+    openCommandPalette: () => setShowCommandPalette(true),
     toggleGrid,
     toggleSnap,
   }), [
@@ -187,6 +190,7 @@ export function App() {
     { key: 'y', ctrl: true, action: 'redo' },
     { key: 'z', ctrl: true, shift: true, action: 'redo' },
     { key: 'a', ctrl: true, action: 'selectAll' },
+    { key: 'k', ctrl: true, action: 'openCommandPalette' },
     { key: 'c', ctrl: true, action: 'copy' },
     { key: 'x', ctrl: true, action: 'cut' },
     { key: 'v', ctrl: true, action: 'paste' },
@@ -217,6 +221,7 @@ export function App() {
 
   const handleNewProject = useCallback((newProject) => {
     setProject(newProject);
+    setShowCommandPalette(false);
     setShowProjectDialog(false);
   }, [setProject]);
 
@@ -224,6 +229,7 @@ export function App() {
     const loadedProject = await loadProject(projectId);
     if (loadedProject) {
       setProject(loadedProject);
+      setShowCommandPalette(false);
       setShowProjectDialog(false);
       notifications.success('Project opened', loadedProject.name);
       return;
@@ -262,6 +268,15 @@ export function App() {
 
   const toggleBuildingPanel = useCallback(() => {
     setShowBuildingPanel((prev) => !prev);
+  }, []);
+
+  const openProjectDialog = useCallback(() => {
+    setShowCommandPalette(false);
+    setShowProjectDialog(true);
+  }, []);
+
+  const closeCommandPalette = useCallback(() => {
+    setShowCommandPalette(false);
   }, []);
 
   const handleExportPDF = useCallback(async () => {
@@ -312,6 +327,222 @@ export function App() {
     [activeLayerId, project?.layers]
   );
 
+  const commandPaletteActions = useMemo(() => {
+    const togglePNG = () => setShowPNGPanel((prev) => !prev);
+    const toggleBuilding = () => setShowBuildingPanel((prev) => !prev);
+    const toggleExplorer = () => setShowProjectExplorer((prev) => !prev);
+
+    return [
+      {
+        id: 'project-new',
+        group: 'Project',
+        label: 'Open New Project Dialog',
+        shortcut: 'Ctrl+N',
+        keywords: ['project', 'new', 'dialog'],
+        onSelect: openProjectDialog,
+      },
+      {
+        id: 'project-save',
+        group: 'Project',
+        label: 'Save Current Project',
+        shortcut: 'Ctrl+S',
+        keywords: ['save', 'project'],
+        onSelect: handleSaveProject,
+      },
+      {
+        id: 'module-workspace',
+        group: 'Module',
+        label: 'Switch to Workspace',
+        keywords: ['module', 'workspace'],
+        onSelect: () => handleModuleChange('workspace'),
+      },
+      {
+        id: 'module-standards',
+        group: 'Module',
+        label: 'Switch to Standards',
+        keywords: ['module', 'standards', 'analysis'],
+        onSelect: () => handleModuleChange('standards'),
+      },
+      {
+        id: 'module-qa',
+        group: 'Module',
+        label: 'Switch to QA / Inspection',
+        keywords: ['module', 'qa', 'inspection'],
+        onSelect: () => handleModuleChange('qa'),
+      },
+      {
+        id: 'module-drainage',
+        group: 'Module',
+        label: 'Switch to Drainage',
+        keywords: ['module', 'drainage'],
+        onSelect: () => handleModuleChange('drainage'),
+      },
+      {
+        id: 'module-reports',
+        group: 'Module',
+        label: 'Switch to Reports',
+        keywords: ['module', 'reports'],
+        onSelect: () => handleModuleChange('reports'),
+      },
+      {
+        id: 'tool-select',
+        group: 'Tool',
+        label: 'Set Tool: Select',
+        shortcut: 'V',
+        keywords: ['tool', 'select'],
+        onSelect: () => setActiveTool('select'),
+      },
+      {
+        id: 'tool-line',
+        group: 'Tool',
+        label: 'Set Tool: Line',
+        shortcut: 'L',
+        keywords: ['tool', 'line', 'draw'],
+        onSelect: () => setActiveTool('line'),
+      },
+      {
+        id: 'tool-polyline',
+        group: 'Tool',
+        label: 'Set Tool: Polyline',
+        shortcut: 'P',
+        keywords: ['tool', 'polyline', 'draw'],
+        onSelect: () => setActiveTool('polyline'),
+      },
+      {
+        id: 'tool-circle',
+        group: 'Tool',
+        label: 'Set Tool: Circle',
+        shortcut: 'C',
+        keywords: ['tool', 'circle', 'draw'],
+        onSelect: () => setActiveTool('circle'),
+      },
+      {
+        id: 'tool-rectangle',
+        group: 'Tool',
+        label: 'Set Tool: Rectangle',
+        shortcut: 'R',
+        keywords: ['tool', 'rectangle', 'draw'],
+        onSelect: () => setActiveTool('rectangle'),
+      },
+      {
+        id: 'tool-text',
+        group: 'Tool',
+        label: 'Set Tool: Text',
+        shortcut: 'T',
+        keywords: ['tool', 'text', 'annotate'],
+        onSelect: () => setActiveTool('text'),
+      },
+      {
+        id: 'tool-dimension',
+        group: 'Tool',
+        label: 'Set Tool: Dimension',
+        shortcut: 'D',
+        keywords: ['tool', 'dimension', 'annotate'],
+        onSelect: () => setActiveTool('dimension'),
+      },
+      {
+        id: 'operation-undo',
+        group: 'Edit',
+        label: 'Undo',
+        shortcut: 'Ctrl+Z',
+        keywords: ['undo', 'edit'],
+        onSelect: () => canUndo() && undo(),
+      },
+      {
+        id: 'operation-redo',
+        group: 'Edit',
+        label: 'Redo',
+        shortcut: 'Ctrl+Y',
+        keywords: ['redo', 'edit'],
+        onSelect: () => canRedo() && redo(),
+      },
+      {
+        id: 'toggle-grid',
+        group: 'View',
+        label: `${gridSettings?.visible ? 'Hide' : 'Show'} Grid`,
+        shortcut: 'G',
+        keywords: ['grid', 'view', 'toggle'],
+        onSelect: toggleGrid,
+      },
+      {
+        id: 'toggle-snap',
+        group: 'View',
+        label: `${snapSettings?.enabled ? 'Disable' : 'Enable'} Snap`,
+        shortcut: 'S',
+        keywords: ['snap', 'view', 'toggle'],
+        onSelect: toggleSnap,
+      },
+      {
+        id: 'toggle-analysis-panel',
+        group: 'Panels',
+        label: `${showPNGPanel ? 'Hide' : 'Show'} Standards Panel`,
+        keywords: ['panel', 'standards', 'analysis'],
+        onSelect: togglePNG,
+      },
+      {
+        id: 'toggle-building-panel',
+        group: 'Panels',
+        label: `${showBuildingPanel ? 'Hide' : 'Show'} Building Parameters`,
+        keywords: ['panel', 'building', 'drainage'],
+        onSelect: toggleBuilding,
+      },
+      {
+        id: 'toggle-explorer',
+        group: 'Panels',
+        label: `${showProjectExplorer ? 'Hide' : 'Show'} Project Explorer`,
+        shortcut: 'E',
+        keywords: ['panel', 'explorer'],
+        onSelect: toggleExplorer,
+      },
+      {
+        id: 'open-surface-import',
+        group: 'Tools',
+        label: 'Open Surface Import',
+        keywords: ['surface', 'tin', 'import'],
+        onSelect: () => setShowSurfaceImport(true),
+      },
+      {
+        id: 'export-pdf',
+        group: 'Export',
+        label: 'Export PDF',
+        keywords: ['export', 'pdf'],
+        onSelect: handleExportPDF,
+      },
+      {
+        id: 'open-help',
+        group: 'Help',
+        label: 'Open Keyboard Shortcuts',
+        shortcut: 'F1',
+        keywords: ['help', 'shortcuts'],
+        onSelect: () => setShowKeyboardHelp(true),
+      },
+      {
+        id: 'open-feedback',
+        group: 'Help',
+        label: 'Open Feedback Form',
+        keywords: ['help', 'feedback', 'bug'],
+        onSelect: () => setShowFeedbackForm(true),
+      },
+    ];
+  }, [
+    canRedo,
+    canUndo,
+    gridSettings?.visible,
+    handleExportPDF,
+    handleModuleChange,
+    handleSaveProject,
+    openProjectDialog,
+    redo,
+    setActiveTool,
+    showBuildingPanel,
+    showPNGPanel,
+    showProjectExplorer,
+    snapSettings?.enabled,
+    toggleGrid,
+    toggleSnap,
+    undo,
+  ]);
+
   if (showProjectDialog) {
     return (
       <ProjectDialog
@@ -333,7 +564,7 @@ export function App() {
           modules={MODULES}
           activeModule={activeModule}
           onModuleChange={handleModuleChange}
-          onNewProject={() => setShowProjectDialog(true)}
+          onNewProject={openProjectDialog}
           onSave={handleSaveProject}
           onTogglePNGPanel={togglePNGPanel}
           onToggleBuildingPanel={toggleBuildingPanel}
@@ -341,6 +572,7 @@ export function App() {
           onShowKeyboardHelp={() => setShowKeyboardHelp(true)}
           onToggleExplorer={() => setShowProjectExplorer((prev) => !prev)}
           onShowFeedback={() => setShowFeedbackForm(true)}
+          onShowCommandPalette={() => setShowCommandPalette(true)}
           isOffline={isOffline}
         />
 
@@ -364,6 +596,7 @@ export function App() {
             <button onClick={() => setShowPNGPanel(true)}>Standards Panel</button>
             <button onClick={() => setShowBuildingPanel(true)}>Drainage Inputs</button>
             <button onClick={() => setShowProjectExplorer(true)}>Project Explorer</button>
+            <button onClick={() => setShowCommandPalette(true)}>Command Palette</button>
             <button className="primary" onClick={handleExportPDF}>Export PDF</button>
           </div>
         </section>
@@ -515,6 +748,12 @@ export function App() {
             }}
           />
         )}
+
+        <CommandPalette
+          open={showCommandPalette}
+          onClose={closeCommandPalette}
+          actions={commandPaletteActions}
+        />
       </div>
     </div>
   );

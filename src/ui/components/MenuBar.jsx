@@ -31,6 +31,7 @@ export function MenuBar({
   onShowKeyboardHelp,
   onToggleExplorer,
   onShowFeedback,
+  onShowCommandPalette,
   isOffline,
 }) {
   const [commandInput, setCommandInput] = useState('');
@@ -184,6 +185,7 @@ export function MenuBar({
             </span>
           )}
           <button className="ghost" onClick={onNewProject}>New</button>
+          <button className="ghost command-trigger" onClick={onShowCommandPalette}>Cmd</button>
           <button className="primary" onClick={onSave}>Save</button>
         </div>
       </div>
@@ -244,6 +246,7 @@ export function MenuBar({
             Snap
           </button>
           <button onClick={() => onModuleChange?.('standards')}>Standards</button>
+          <button onClick={onShowCommandPalette}>Command</button>
           <button onClick={onToggleExplorer}>Explorer</button>
           <button onClick={onShowKeyboardHelp}>Help</button>
         </div>
